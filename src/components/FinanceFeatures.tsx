@@ -1,8 +1,5 @@
-import { TrendingUpIcon, DollarSignIcon, TargetIcon, BrainCircuitIcon, BarChart3Icon } from "lucide-react";
-import { cn } from "../lib/utils";
-import { AnimatedList, AnimatedListItem } from "../components/magicui/animated-list";
+import { TrendingUpIcon, DollarSignIcon, BrainCircuitIcon, BarChart3Icon } from "lucide-react"
 import { BentoCard, BentoGrid } from "../components/magicui/bento-grid";
-import { Marquee } from "../components/magicui/marquee";
 
 const stockData = [
   {

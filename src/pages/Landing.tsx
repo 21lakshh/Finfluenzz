@@ -1,4 +1,3 @@
-
 import HeroSection from "../components/HeroSection"
 import { MarqueeDemo } from "../components/reviews"
 import { FinanceFeatures } from "../components/FinanceFeatures"

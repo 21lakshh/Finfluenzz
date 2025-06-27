@@ -1,7 +1,4 @@
-import { ArrowRightIcon } from "@radix-ui/react-icons";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
-
-import { Button } from 'pixel-retroui';
 import { cn } from "../../lib/utils";
 
 interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
@@ -23,7 +20,7 @@ const BentoGrid = ({ children, className, ...props }: BentoGridProps) => {
   return (
     <div
       className={cn(
-        "grid w-full auto-rows-[22rem] grid-cols-3 gap-4",
+        "grid w-full auto-rows-[24rem] grid-cols-3 gap-6",
         className,
       )}
       {...props}
@@ -46,37 +43,29 @@ const BentoCard = ({
   <div
     key={name}
     className={cn(
-      "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl",
+      "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200/50",
       // light styles
-      "bg-background [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+      "bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl",
       // dark styles
-      "transform-gpu dark:bg-background dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
+      "dark:bg-gray-900/80 dark:border-gray-700/50 dark:shadow-2xl",
+      "transition-all duration-300 hover:scale-[1.02]",
       className,
     )}
     {...props}
   >
-    <div>{background}</div>
-    <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
-      <Icon className="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75" />
+    <div className="relative">{background}</div>
+    
+    {/* Blur overlay at the bottom for text readability */}
+    <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white/80 via-white/40 via-white/20 to-transparent backdrop-blur-sm dark:from-gray-900/80 dark:via-gray-900/40 dark:via-gray-900/20" />
+    
+    <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300">
+      <Icon className="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out" />
       <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300">
         {name}
       </h3>
       <p className="max-w-lg text-neutral-400">{description}</p>
     </div>
-
-    <div
-      className={cn(
-        "pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100",
-      )}
-    >
-      <Button className="pointer-events-auto bg-[#007FFF] hover:bg-[#001F3F] text-white px-4 py-2 rounded-lg font-minecraft border-2 border-[#001F3F] transition-all duration-300">
-        <a href={href} className="flex items-center gap-2">
-          {cta}
-          <ArrowRightIcon className="w-4 h-4" />
-        </a>
-      </Button>
-    </div>
-    <div className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03] group-hover:dark:bg-neutral-800/10" />
+    <div className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-gradient-to-t group-hover:from-[#007FFF]/5 group-hover:to-transparent" />
   </div>
 );
 

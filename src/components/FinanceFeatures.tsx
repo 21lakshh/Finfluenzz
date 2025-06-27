@@ -4,49 +4,49 @@ import { BentoCard, BentoGrid } from "../components/magicui/bento-grid";
 const stockData = [
   {
     name: "AAPL",
-    price: "$178.25",
+    price: "₹14,860",
     change: "+2.4%",
     body: "Apple Inc. - Strong performance with iPhone 15 sales exceeding expectations.",
   },
   {
     name: "TSLA", 
-    price: "$243.84",
+    price: "₹20,320",
     change: "+5.1%",
     body: "Tesla Inc. - Cybertruck production ramping up, deliveries ahead of schedule.",
   },
   {
     name: "NVDA",
-    price: "$455.32", 
+    price: "₹37,944", 
     change: "+8.7%",
     body: "NVIDIA Corporation - AI chip demand continues to drive massive growth.",
   },
   {
     name: "MSFT",
-    price: "$378.91",
+    price: "₹31,593",
     change: "+1.8%",
     body: "Microsoft Corporation - Azure cloud services showing steady growth.",
   },
   {
     name: "GOOGL",
-    price: "$134.12",
+    price: "₹11,177",
     change: "+3.2%",
     body: "Alphabet Inc. - Search revenue up, AI integration boosting ad performance.",
   },
 ];
 
 const budgetItems = [
-  "💰 Monthly Income: $3,200",
-  "🏠 Rent: $1,200 (37.5%)", 
-  "🍕 Food: $400 (12.5%)",
-  "🚗 Transportation: $300 (9.4%)",
-  "🎯 Savings Goal: $800 (25%)",
-  "🎮 Entertainment: $200 (6.3%)",
-  "📱 Subscriptions: $100 (3.1%)",
+  "💰 Monthly Income: ₹65,000",
+  "🏠 Rent: ₹24,000 (37.5%)", 
+  "🍕 Food: ₹8,000 (12.5%)",
+  "🚗 Transportation: ₹6,000 (9.4%)",
+  "🎯 Savings Goal: ₹16,000 (25%)",
+  "🎮 Entertainment: ₹4,000 (6.3%)",
+  "📱 Subscriptions: ₹2,000 (3.1%)",
 ];
 
 const aiInsights = [
   "🔥 Hot Stock Alert: NVDA showing strong momentum",
-  "💡 Budget Tip: You could save $50/month on subscriptions",
+  "💡 Budget Tip: You could save ₹1,000/month on subscriptions",
   "📈 Portfolio Insight: Your tech allocation is optimal",
   "⚠️ Risk Alert: Consider diversifying beyond tech",
   "🎯 Goal Update: You're 85% to your savings target!",
@@ -74,7 +74,7 @@ const StockChart = () => {
     <div className="absolute inset-4 flex flex-col">
       <div className="mb-4">
         <h3 className="text-lg font-minecraft font-bold text-[#007FFF]">AAPL</h3>
-        <p className="text-2xl font-bold text-green-600">$168.25 +2.4%</p>
+        <p className="text-2xl font-bold text-green-600">₹14,021 +2.4%</p>
       </div>
       <div className="flex-1 relative">
         <svg className="w-full h-full" viewBox="0 0 400 200">
@@ -210,17 +210,9 @@ const features = [
 
 export function FinanceFeatures() {
   return (
-    <div className="py-20 px-4">
-      <div className="text-center mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-[#001F3F] dark:text-white mb-4 font-minecraft">
-          Powerful Features for Gen Z Investors
-        </h2>
-        <p className="text-xl text-[#001F3F] dark:text-gray-300 font-minecraft opacity-80 max-w-3xl mx-auto">
-          Everything you need to master your finances, from AI-powered insights to real-time market data
-        </p>
-      </div>
-      <div className="max-w-6xl mx-auto">
-        <BentoGrid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[350px]">
+    <div className="px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <BentoGrid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[400px]">
           {features.map((feature, idx) => (
             <BentoCard key={idx} {...feature} />
           ))}

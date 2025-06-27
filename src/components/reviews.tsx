@@ -1,4 +1,3 @@
-import { cn } from "../lib/utils";
 import { Marquee } from "../components/magicui/marquee";
  
 const reviews = [
@@ -55,25 +54,30 @@ const ReviewCard = ({
   body: string;
 }) => {
   return (
-    <figure
-      className={cn(
-        "relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border p-4 mx-2",
-        // light styles
-        "border-blue-200 bg-white/80 hover:bg-white/90 shadow-lg",
-        // dark styles
-        "dark:border-blue-800 dark:bg-slate-800/80 dark:hover:bg-slate-800/90",
-      )}
-    >
-      <div className="flex flex-row items-center gap-2">
-        <img className="rounded-full" width="32" height="32" alt="" src={img} />
+    <figure className="relative h-full w-64 cursor-pointer overflow-hidden border-3 border-[#007FFF]/60 p-4 mx-2 bg-white/70 backdrop-blur-sm hover:bg-white/85 hover:border-[#007FFF] transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl" style={{ borderRadius: '8px' }}>
+      {/* Subtle corner accents */}
+      <div className="absolute top-2 left-2 w-2 h-2 bg-[#007FFF]/40 rounded-sm"></div>
+      <div className="absolute top-2 right-2 w-2 h-2 bg-[#001F3F]/40 rounded-sm"></div>
+      
+      <div className="flex flex-row items-center gap-3 mb-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-[#007FFF]/90 to-[#001F3F]/90 border-2 border-[#007FFF]/50 flex items-center justify-center text-white font-bold text-sm rounded-lg shadow-md">
+          {name.charAt(0)}
+        </div>
         <div className="flex flex-col">
-          <figcaption className="text-sm font-medium text-[#001F3F] dark:text-white font-minecraft">
+          <figcaption className="text-sm font-bold text-[#001F3F] tracking-wide">
             {name}
           </figcaption>
-          <p className="text-xs font-medium text-[#007FFF] dark:text-blue-300">{username}</p>
+          <p className="text-xs font-semibold text-[#007FFF]/80">{username}</p>
         </div>
       </div>
-      <blockquote className="mt-2 text-sm text-gray-700 dark:text-gray-200">{body}</blockquote>
+      <blockquote className="text-sm text-[#001F3F]/90 font-medium leading-relaxed">{body}</blockquote>
+      
+      {/* Enhanced rating stars */}
+      <div className="mt-4 flex items-center gap-1">
+        {[1,2,3,4,5].map(star => (
+          <div key={star} className="w-3 h-3 bg-gradient-to-br from-yellow-400 to-yellow-500 transform rotate-45 shadow-sm"></div>
+        ))}
+      </div>
     </figure>
   );
 };
@@ -91,8 +95,9 @@ export function MarqueeDemo() {
           <ReviewCard key={review.username} {...review} />
         ))}
       </Marquee>
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-gradient-to-r from-background"></div>
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-gradient-to-l from-background"></div>
+      {/* Enhanced gradient blending */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#B3DBFF] via-[#B3DBFF]/50 to-transparent"></div>
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#B3DBFF] via-[#B3DBFF]/50 to-transparent"></div>
     </div>
   );
 }

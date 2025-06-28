@@ -5,37 +5,31 @@ const reviews = [
     name: "Alex Chen",
     username: "@alexinvests",
     body: "Finally, a fintech app that speaks my language! The pixel UI makes investing fun and the AI insights are spot-on. 🚀",
-    img: "https://avatar.vercel.sh/alex",
   },
   {
     name: "Maya Patel",
     username: "@mayamoney",
     body: "Finfluenzz turned me from a financial noob to someone who actually understands my portfolio. The gamification is addictive!",
-    img: "https://avatar.vercel.sh/maya",
   },
   {
     name: "Jordan Kim",
     username: "@jordantrades",
     body: "Best budgeting app for Gen Z hands down. The retro aesthetic + modern features = chef's kiss 👌",
-    img: "https://avatar.vercel.sh/jordan",
   },
   {
     name: "Sam Rodriguez",
     username: "@samstocks",
     body: "Made my first profitable trade using Finfluenzz's AI analysis. This app is literally changing my financial future.",
-    img: "https://avatar.vercel.sh/sam",
   },
   {
     name: "Riley Thompson",
     username: "@rileysaves",
     body: "Love how it breaks down complex financial concepts into bite-sized, understandable pieces. Perfect for beginners!",
-    img: "https://avatar.vercel.sh/riley",
   },
   {
     name: "Casey Wong",
     username: "@caseycoins",
     body: "The pixel art style + serious financial tools = exactly what our generation needed. It's like if TikTok made a finance app.",
-    img: "https://avatar.vercel.sh/casey",
   },
 ];
  
@@ -43,12 +37,10 @@ const firstRow = reviews.slice(0, reviews.length / 2);
 const secondRow = reviews.slice(reviews.length / 2);
  
 const ReviewCard = ({
-  img,
   name,
   username,
   body,
 }: {
-  img: string;
   name: string;
   username: string;
   body: string;

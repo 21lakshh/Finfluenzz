@@ -167,13 +167,6 @@ class StockAPIService {
     }));
   }
 
-  // This method is disabled to avoid rate limit issues with Alpha Vantage
-  // We now calculate technical indicators directly from historical data
-  private async getAlphaVantageTechnicals(symbol: string): Promise<TechnicalIndicators> {
-    console.log('Alpha Vantage technical indicators disabled to avoid rate limits. Using calculated indicators instead.');
-    return await this.calculateTechnicalIndicatorsFromHistoricalData(symbol);
-  }
-
   // Finnhub implementations
   private async getFinnhubQuote(symbol: string): Promise<StockQuote> {
     const response = await axios.get(

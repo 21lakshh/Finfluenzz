@@ -39,10 +39,19 @@ class StockAPIService {
   constructor() {
     this.alphaVantageKey = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY || '';
     this.finnhubKey = import.meta.env.VITE_FINNHUB_API_KEY || '';
+    
+    // Validate API keys on initialization
+    if (!this.alphaVantageKey && !this.finnhubKey) {
+      console.error('❌ No stock API keys found! Please add VITE_ALPHA_VANTAGE_API_KEY or VITE_FINNHUB_API_KEY to your .env file');
+    }
   }
 
   // Get real-time stock quote
   async getStockQuote(symbol: string): Promise<StockQuote> {
+    if (!this.alphaVantageKey && !this.finnhubKey) {
+      throw new Error('No stock API keys configured. Please add VITE_ALPHA_VANTAGE_API_KEY or VITE_FINNHUB_API_KEY to your .env file');
+    }
+
     try {
       // Try Alpha Vantage first
       if (this.alphaVantageKey) {
@@ -54,16 +63,19 @@ class StockAPIService {
         return await this.getFinnhubQuote(symbol);
       }
 
-      // If no API keys, return mock data
-      return this.getMockStockQuote(symbol);
+      throw new Error('No valid API keys available');
     } catch (error) {
       console.error('Error fetching stock quote:', error);
-      return this.getMockStockQuote(symbol);
+      throw new Error(`Failed to fetch stock quote for ${symbol}. Please check your API keys and try again.`);
     }
   }
 
   // Get historical data for charts
   async getHistoricalData(symbol: string, days: number = 30): Promise<StockHistoricalData[]> {
+    if (!this.alphaVantageKey && !this.finnhubKey) {
+      throw new Error('No stock API keys configured. Please add VITE_ALPHA_VANTAGE_API_KEY or VITE_FINNHUB_API_KEY to your .env file');
+    }
+
     try {
       if (this.alphaVantageKey) {
         return await this.getAlphaVantageHistorical(symbol, days);
@@ -73,24 +85,25 @@ class StockAPIService {
         return await this.getFinnhubHistorical(symbol, days);
       }
 
-      return this.getMockHistoricalData(symbol, days);
+      throw new Error('No valid API keys available');
     } catch (error) {
       console.error('Error fetching historical data:', error);
-      return this.getMockHistoricalData(symbol, days);
+      throw new Error(`Failed to fetch historical data for ${symbol}. Please check your API keys and try again.`);
     }
   }
 
   // Get technical indicators
   async getTechnicalIndicators(symbol: string): Promise<TechnicalIndicators> {
+    if (!this.alphaVantageKey && !this.finnhubKey) {
+      throw new Error('No stock API keys configured. Please add VITE_ALPHA_VANTAGE_API_KEY or VITE_FINNHUB_API_KEY to your .env file');
+    }
+
     try {
-      if (this.alphaVantageKey) {
-        return await this.getAlphaVantageTechnicals(symbol);
-      }
-      
-      return this.getMockTechnicalIndicators();
+      // Primary method: Calculate indicators from historical data (more reliable)
+      return await this.calculateTechnicalIndicatorsFromHistoricalData(symbol);
     } catch (error) {
-      console.error('Error fetching technical indicators:', error);
-      return this.getMockTechnicalIndicators();
+      console.error('Error calculating technical indicators:', error);
+      throw new Error(`Failed to calculate technical indicators for ${symbol}. Please check your API keys and try again.`);
     }
   }
 
@@ -100,7 +113,19 @@ class StockAPIService {
       `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.alphaVantageKey}`
     );
 
+    if (response.data['Error Message']) {
+      throw new Error(`Alpha Vantage API Error: ${response.data['Error Message']}`);
+    }
+
+    if (response.data['Note']) {
+      throw new Error('Alpha Vantage API rate limit exceeded. Please wait or upgrade your plan.');
+    }
+
     const data = response.data['Global Quote'];
+    if (!data) {
+      throw new Error(`No data found for symbol ${symbol}`);
+    }
+
     return {
       symbol: data['01. symbol'],
       price: parseFloat(data['05. price']),
@@ -117,7 +142,19 @@ class StockAPIService {
       `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${this.alphaVantageKey}`
     );
 
+    if (response.data['Error Message']) {
+      throw new Error(`Alpha Vantage API Error: ${response.data['Error Message']}`);
+    }
+
+    if (response.data['Note']) {
+      throw new Error('Alpha Vantage API rate limit exceeded. Please wait or upgrade your plan.');
+    }
+
     const timeSeries = response.data['Time Series (Daily)'];
+    if (!timeSeries) {
+      throw new Error(`No historical data found for symbol ${symbol}`);
+    }
+
     const dates = Object.keys(timeSeries).slice(0, days);
     
     return dates.map(date => ({
@@ -130,10 +167,11 @@ class StockAPIService {
     }));
   }
 
+  // This method is disabled to avoid rate limit issues with Alpha Vantage
+  // We now calculate technical indicators directly from historical data
   private async getAlphaVantageTechnicals(symbol: string): Promise<TechnicalIndicators> {
-    // This would require multiple API calls to Alpha Vantage technical indicators
-    // For now, return mock data
-    return this.getMockTechnicalIndicators();
+    console.log('Alpha Vantage technical indicators disabled to avoid rate limits. Using calculated indicators instead.');
+    return await this.calculateTechnicalIndicatorsFromHistoricalData(symbol);
   }
 
   // Finnhub implementations
@@ -143,6 +181,10 @@ class StockAPIService {
     );
 
     const data = response.data;
+    if (!data || data.c === 0) {
+      throw new Error(`No quote data found for symbol ${symbol}`);
+    }
+
     return {
       symbol,
       price: data.c,
@@ -164,7 +206,11 @@ class StockAPIService {
 
     const data = response.data;
     if (data.s !== 'ok') {
-      throw new Error('Invalid response from Finnhub');
+      throw new Error(`Finnhub API Error: ${data.s}`);
+    }
+
+    if (!data.t || data.t.length === 0) {
+      throw new Error(`No historical data found for symbol ${symbol}`);
     }
 
     return data.t.map((timestamp: number, index: number) => ({
@@ -174,77 +220,110 @@ class StockAPIService {
       low: data.l[index],
       close: data.c[index],
       volume: data.v[index]
-    }));
+    })).reverse(); // Reverse to get most recent first
   }
 
-  // Mock data for testing
-  private getMockStockQuote(symbol: string): StockQuote {
-    const mockPrices: Record<string, number> = {
-      'AAPL': 175.43,
-      'GOOGL': 142.56,
-      'MSFT': 378.85,
-      'TSLA': 248.50,
-      'NVDA': 455.67,
-      'AMZN': 151.94
-    };
-
-    const basePrice = mockPrices[symbol] || 100;
-    const change = (Math.random() - 0.5) * 10;
-    const changePercent = (change / basePrice) * 100;
-
-    return {
-      symbol,
-      price: basePrice + change,
-      change,
-      changePercent,
-      volume: Math.floor(Math.random() * 10000000),
-      high52Week: basePrice * 1.3,
-      low52Week: basePrice * 0.7
-    };
-  }
-
-  private getMockHistoricalData(symbol: string, days: number): StockHistoricalData[] {
-    const data: StockHistoricalData[] = [];
-    let basePrice = 100;
+  // Calculate technical indicators from historical data (reliable method)
+  private async calculateTechnicalIndicatorsFromHistoricalData(symbol: string): Promise<TechnicalIndicators> {
+    // Use existing historical data if we already have it, otherwise fetch new data
+    let historicalData: StockHistoricalData[];
     
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      
-      const volatility = 0.02;
-      const change = (Math.random() - 0.5) * basePrice * volatility;
-      basePrice += change;
-      
-      const dayRange = basePrice * 0.05;
-      const open = basePrice + (Math.random() - 0.5) * dayRange;
-      const close = basePrice + (Math.random() - 0.5) * dayRange;
-      const high = Math.max(open, close) + Math.random() * dayRange * 0.5;
-      const low = Math.min(open, close) - Math.random() * dayRange * 0.5;
-
-      data.push({
-        date: date.toISOString().split('T')[0],
-        open,
-        high,
-        low,
-        close,
-        volume: Math.floor(Math.random() * 10000000)
-      });
+    try {
+      historicalData = await this.getHistoricalData(symbol, 60); // Get 60 days for better calculations
+    } catch (error) {
+      console.error('Error fetching historical data for technical indicators:', error);
+      throw new Error('Unable to fetch historical data needed for technical indicators');
     }
     
-    return data;
+    if (historicalData.length < 20) {
+      throw new Error(`Insufficient historical data for technical indicators calculation. Got ${historicalData.length} days, need at least 20.`);
+    }
+
+    const prices = historicalData.map(d => d.close);
+    
+    // Calculate technical indicators
+    const rsi = this.calculateRSI(prices, Math.min(14, prices.length - 1));
+    const sma20 = this.calculateSMA(prices, Math.min(20, prices.length));
+    const sma50 = this.calculateSMA(prices, Math.min(50, prices.length));
+    const macd = this.calculateMACD(prices);
+
+    console.log(`✅ Calculated technical indicators for ${symbol}: RSI=${rsi.toFixed(1)}, SMA20=${sma20.toFixed(2)}, SMA50=${sma50.toFixed(2)}`);
+
+    return {
+      rsi,
+      sma20,
+      sma50,
+      macd
+    };
   }
 
-  private getMockTechnicalIndicators(): TechnicalIndicators {
+  private calculateRSI(prices: number[], period: number): number {
+    if (prices.length < period + 1) return 50; // Default neutral RSI
+
+    let gains = 0;
+    let losses = 0;
+
+    // Calculate initial average gain and loss
+    for (let i = 1; i <= period; i++) {
+      const change = prices[i] - prices[i - 1];
+      if (change > 0) gains += change;
+      else losses -= change;
+    }
+
+    let avgGain = gains / period;
+    let avgLoss = losses / period;
+
+    // Calculate RSI for remaining periods
+    for (let i = period + 1; i < prices.length; i++) {
+      const change = prices[i] - prices[i - 1];
+      avgGain = ((avgGain * (period - 1)) + (change > 0 ? change : 0)) / period;
+      avgLoss = ((avgLoss * (period - 1)) + (change < 0 ? -change : 0)) / period;
+    }
+
+    const rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  private calculateSMA(prices: number[], period: number): number {
+    if (prices.length < period) return prices[0] || 0;
+    
+    const recentPrices = prices.slice(0, period);
+    return recentPrices.reduce((sum, price) => sum + price, 0) / period;
+  }
+
+  private calculateMACD(prices: number[]): { line: number; signal: number; histogram: number } {
+    if (prices.length < 26) {
+      // Return neutral MACD for insufficient data
+      return { line: 0, signal: 0, histogram: 0 };
+    }
+    
+    const ema12 = this.calculateEMA(prices, 12);
+    const ema26 = this.calculateEMA(prices, 26);
+    const macdLine = ema12 - ema26;
+    
+    // Calculate signal line as EMA(9) of MACD line
+    // For simplicity, using a basic approximation
+    const signalLine = macdLine * 0.8; // Simplified signal line calculation
+    const histogram = macdLine - signalLine;
+
     return {
-      rsi: 45 + Math.random() * 40, // RSI between 45-85
-      sma20: 100 + Math.random() * 50,
-      sma50: 95 + Math.random() * 60,
-      macd: {
-        line: Math.random() * 4 - 2,
-        signal: Math.random() * 4 - 2,
-        histogram: Math.random() * 2 - 1
-      }
+      line: macdLine,
+      signal: signalLine,
+      histogram: histogram
     };
+  }
+
+  private calculateEMA(prices: number[], period: number): number {
+    if (prices.length < period) return prices[0] || 0;
+    
+    const multiplier = 2 / (period + 1);
+    let ema = prices[period - 1]; // Start with SMA
+    
+    for (let i = period; i < prices.length; i++) {
+      ema = (prices[i] * multiplier) + (ema * (1 - multiplier));
+    }
+    
+    return ema;
   }
 }
 

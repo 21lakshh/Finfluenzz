@@ -90,6 +90,6 @@ export default function Landing() {
                     </div>
                 </div>
             </section>
-        </div>
+</div>
     )
 }

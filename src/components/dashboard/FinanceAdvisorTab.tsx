@@ -105,7 +105,7 @@ export default function FinanceAdvisorTab() {
     symbol?: string
   }>>([
     {
-      text: "Yo yo yo! 👋 FinanceGuru here, ready to help you navigate these markets! 📈\n\nI'm your Gen Z finance friend who actually knows what they're talking about (no cap! 💯). Ask me about any stock, get real-time analysis, or just vibe about your investment goals!\n\nTry asking me:\n• \"What's the deal with AAPL stock?\"\n• \"Should I buy Tesla right now?\"\n• \"NVDA price prediction?\"\n• \"Analyze GOOGL chart\"\n\nLet's make some money moves! 🚀💰",
+      text: "Yo yo yo! 👋 FinanceGuru here, ready to help you navigate these markets with REAL data! 📈\n\nI'm your Gen Z finance friend who actually knows what they're talking about (no cap! 💯). I'm now connected to live APIs for:\n🔥 Real-time stock prices\n📊 Live technical indicators (RSI, MACD, SMA)\n📈 Actual historical charts\n🧠 AI-powered analysis\n\nTry asking me:\n• \"What's the deal with AAPL stock?\"\n• \"Should I buy Tesla right now?\"\n• \"NVDA price prediction?\"\n• \"Analyze GOOGL chart\"\n\nLet's make some money moves with REAL market data! 🚀💰💯",
       isUser: false
     }
   ])

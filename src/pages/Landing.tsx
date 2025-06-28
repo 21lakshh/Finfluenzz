@@ -1,8 +1,13 @@
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import HeroSection from "../components/HeroSection"
 import { MarqueeDemo } from "../components/reviews"
 import { FinanceFeatures } from "../components/FinanceFeatures"
 
 export default function Landing() {
+    const navigate = useNavigate()
+    const { user } = useAuth()
+
     return (
         <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-b from-[#F0F8FF] to-[#E6F3FF]">
             {/* Pixelated background pattern */}
@@ -72,20 +77,34 @@ export default function Landing() {
                             Join thousands of Gen Z investors already winning with Finfluenzz! 🚀
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                            <button 
-                                className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-4 text-lg font-bold border-4 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all duration-300 transform hover:scale-105"
-                                style={{ borderRadius: '0px' }}
-                                onClick={() => window.location.href = '/signup'}
-                            >
-                                🎮 START YOUR JOURNEY
-                            </button>
-                            <button 
-                                className="bg-white text-[#007FFF] px-8 py-4 text-lg font-bold border-4 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-all duration-300"
-                                style={{ borderRadius: '0px' }}
-                                onClick={() => window.location.href = '/signin'}
-                            >
-                                📊 SIGN IN
-                            </button>
+                            {user ? (
+                                // Show dashboard button if user is logged in
+                                <button 
+                                    className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-4 text-lg font-bold border-4 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all duration-300 transform hover:scale-105"
+                                    style={{ borderRadius: '0px' }}
+                                    onClick={() => navigate('/dashboard')}
+                                >
+                                    🎮 GO TO DASHBOARD
+                                </button>
+                            ) : (
+                                // Show signup and signin buttons if user is not logged in
+                                <>
+                                    <button 
+                                        className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-4 text-lg font-bold border-4 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all duration-300 transform hover:scale-105"
+                                        style={{ borderRadius: '0px' }}
+                                        onClick={() => navigate('/signup')}
+                                    >
+                                        🎮 START YOUR JOURNEY
+                                    </button>
+                                    <button 
+                                        className="bg-white text-[#007FFF] px-8 py-4 text-lg font-bold border-4 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-all duration-300"
+                                        style={{ borderRadius: '0px' }}
+                                        onClick={() => navigate('/signin')}
+                                    >
+                                        📊 SIGN IN
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

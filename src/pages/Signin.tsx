@@ -1,6 +1,7 @@
 import axios from 'axios'
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 interface FormData {
   email: string
@@ -9,6 +10,7 @@ interface FormData {
 
 export default function Signin() {
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: ''
@@ -61,10 +63,14 @@ export default function Signin() {
     try {
         const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/signin", formData)
         if (response.status === 200) {
-          localStorage.setItem('authToken', response.data.token)
+          localStorage.setItem('Authorization', response.data.token)
+          
+          // Refresh user data in auth context
+          await refreshUser()
+          
           navigate('/dashboard')
         }
-          } catch (error) {
+    } catch (error) {
         console.error('Signin error:', error)
         if (axios.isAxiosError(error) && error.response) {
           const errorData = error.response.data
@@ -96,6 +102,13 @@ export default function Signin() {
       <div className="relative bg-blue-50/95 border-4 border-[#007FFF] rounded-none shadow-2xl w-full max-w-md p-8 backdrop-blur-sm z-10">
         {/* Header */}
         <div className="text-center mb-8">
+          <button
+            onClick={() => navigate('/')}
+            className="mb-4 text-[#007FFF] hover:text-[#001F3F] transition-colors text-xs font-bold tracking-wide flex items-center justify-center mx-auto space-x-1"
+          >
+            <span>←</span>
+            <span>[BACK TO HOME]</span>
+          </button>
           <h1 className="text-3xl font-bold text-[#001F3F] mb-2 tracking-wider">
             SIGN IN
           </h1>
@@ -176,15 +189,6 @@ export default function Signin() {
               </button>
             </p>
           </div>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-[#007FFF]/10 border-2 border-[#007FFF]/30">
-          <h3 className="text-[#001F3F] font-bold text-xs tracking-wide mb-2">DEMO CREDENTIALS:</h3>
-          <p className="text-[#001F3F] text-xs font-mono opacity-70">
-            Email: lakshyapaliwal200@gmail.com<br/>
-            Password: 123456789
-          </p>
         </div>
       </div>
     </div>

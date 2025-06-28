@@ -11,11 +11,11 @@ export const authmiddleware = async (c: Context, next: Next) => {
     const words = bearer.split(" ");
     const jwtToken = words[1];
   
-    const decodedvalue = await verify(jwtToken, c.env.JWT_SECRET) as { id: string };
-    if (!decodedvalue.id) {
+    const decodedvalue = await verify(jwtToken, c.env.JWT_SECRET) as { userId: string };
+    if (!decodedvalue.userId) {
       return c.json({ msg: "Invalid user request not authorized" }, 401);
     } else {
-      c.set('userId', decodedvalue.id);
+      c.set('userId', decodedvalue.userId);
       await next();
     }
   }

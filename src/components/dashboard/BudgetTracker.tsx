@@ -1,4 +1,5 @@
-import  { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react'
 
 export interface ExpenseItem {
@@ -6,18 +7,27 @@ export interface ExpenseItem {
   category: string
   amount: number
   description: string
-  date: string
+  date?: string // Make date optional since backend might not have it
 }
 
 interface BudgetTrackerProps {
   onExpensesChange?: (expenses: ExpenseItem[]) => void
 }
 
+// Cache configuration (shared with ChallengesTab)
+const CACHE_KEY = 'finfluenzz-challenges-expenses-cache'
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+interface CachedExpenses {
+  data: ExpenseItem[]
+  timestamp: number
+}
+
 export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
-    const saved = localStorage.getItem('finfluenzz-expenses')
-    return saved ? JSON.parse(saved) : []
-  })
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAddingExpense, setIsAddingExpense] = useState(false)
+  const [error, setError] = useState<string>('')
   
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [newExpense, setNewExpense] = useState<Omit<ExpenseItem, 'id'>>({
@@ -27,33 +37,210 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
     date: new Date().toISOString().split('T')[0]
   })
 
-  // Save to localStorage and notify parent whenever expenses change
+  // Check if cached data is still valid
+  const isCacheValid = (): boolean => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (!cached) return false
+      
+      const { timestamp }: CachedExpenses = JSON.parse(cached)
+      const now = Date.now()
+      return (now - timestamp) < CACHE_DURATION
+    } catch {
+      return false
+    }
+  }
+
+  // Get cached data
+  const getCachedExpenses = (): ExpenseItem[] | null => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (!cached) return null
+      
+      const { data }: CachedExpenses = JSON.parse(cached)
+      return data
+    } catch {
+      return null
+    }
+  }
+
+  // Cache expenses data
+  const cacheExpenses = (expenseData: ExpenseItem[]) => {
+    try {
+      const cacheData: CachedExpenses = {
+        data: expenseData,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
+    } catch (error) {
+      console.warn('Failed to cache expenses:', error)
+    }
+  }
+
+  // Load expenses from API on component mount
   useEffect(() => {
-    localStorage.setItem('finfluenzz-expenses', JSON.stringify(expenses))
+    fetchExpenses()
+  }, [])
+
+  // Notify parent whenever expenses change
+  useEffect(() => {
     onExpensesChange?.(expenses)
     // Dispatch custom event for other components to listen
     window.dispatchEvent(new CustomEvent('expensesUpdated'))
   }, [expenses, onExpensesChange])
 
-  const handleAddExpense = () => {
-    if (newExpense.category && newExpense.amount > 0 && newExpense.description) {
-      const expense: ExpenseItem = {
-        id: Date.now().toString(),
-        ...newExpense
+  const fetchExpenses = async (forceRefresh = false) => {
+    // Use cached data if valid and not forcing refresh
+    if (!forceRefresh && isCacheValid()) {
+      const cachedData = getCachedExpenses()
+      if (cachedData) {
+        setExpenses(cachedData)
+        setIsLoading(false)
+        return
       }
-      setExpenses([...expenses, expense])
-      setNewExpense({
-        category: '',
-        amount: 0,
-        description: '',
-        date: new Date().toISOString().split('T')[0]
+    }
+
+    try {
+      setIsLoading(true)
+      setError('')
+      const response = await axios.get("https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/all", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
+        }
       })
-      setShowExpenseForm(false)
+      
+      if (response.data && response.data.expenses) {
+        // Map backend response to frontend format
+        const mappedExpenses = response.data.expenses.map((expense: any) => ({
+          id: expense.id.toString(),
+          category: expense.category,
+          amount: expense.amount,
+          description: expense.description,
+          date: expense.date || new Date().toISOString().split('T')[0] // Use current date if not provided
+        }))
+        setExpenses(mappedExpenses)
+        cacheExpenses(mappedExpenses) // Cache the fresh data
+        console.log('Successfully loaded', mappedExpenses.length, 'expenses')
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error)
+      
+      // Clear cache on auth errors to prevent data leakage
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        localStorage.removeItem(CACHE_KEY)
+      }
+      
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status
+        const errorMsg = error.response?.data?.msg || error.response?.data?.error || error.message
+        
+        console.error('API Error:', { status, errorMsg, fullResponse: error.response?.data })
+        
+        if (status === 401) {
+          setError('Authentication failed. Please sign in again.')
+        } else if (status === 500) {
+          setError(`Server error (500): ${errorMsg}. Check console for details.`)
+        } else {
+          setError(`API error (${status}): ${errorMsg}`)
+        }
+      } else {
+        setError('Network error. Please check your connection.')
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleRemoveExpense = (id: string) => {
-    setExpenses(expenses.filter(expense => expense.id !== id))
+  const handleAddExpense = async () => {
+    if (!newExpense.category || !newExpense.amount || newExpense.amount <= 0 || !newExpense.description) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    try {
+      setIsAddingExpense(true)
+      setError('')
+      
+      // Prepare data for backend (exclude date since backend doesn't expect it)
+      const expenseData = {
+        amount: Math.round(newExpense.amount), // Convert to integer for database
+        category: newExpense.category,
+        description: newExpense.description
+      }
+
+      const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/add", expenseData, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
+        }
+      })
+      
+      if (response.data && response.data.expense) {
+        // Add the new expense to local state
+        const addedExpense: ExpenseItem = {
+          id: response.data.expense.id.toString(),
+          category: response.data.expense.category,
+          amount: response.data.expense.amount,
+          description: response.data.expense.description,
+          date: newExpense.date // Use the date from the form
+        }
+        
+        // Update local state
+        const updatedExpenses = [...expenses, addedExpense]
+        setExpenses(updatedExpenses)
+        
+        // Update cache with new expense
+        cacheExpenses(updatedExpenses)
+        
+        // Reset form
+        setNewExpense({
+          category: '',
+          amount: 0,
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        })
+        setShowExpenseForm(false)
+      }
+    } catch (error) {
+      console.error('Error adding expense:', error)
+      if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          setError('Please log in to add expenses')
+        } else if (error.response.status === 400) {
+          setError(error.response.data?.error || 'Invalid expense data')
+        } else {
+          setError('Failed to add expense. Please try again.')
+        }
+      } else {
+        setError('Network error. Please check your connection.')
+      }
+    } finally {
+      setIsAddingExpense(false)
+    }
+  }
+
+  const handleRemoveExpense = async (id: string) => {
+    try {
+      setError('')
+      await axios.delete(`https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/delete/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
+        }
+      })
+      
+      // Update local state
+      const updatedExpenses = expenses.filter(expense => expense.id !== id)
+      setExpenses(updatedExpenses)
+      
+      // Update cache with removed expense
+      cacheExpenses(updatedExpenses)
+    } catch (error) {
+      console.error('Error deleting expense:', error)
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        setError('Please log in to delete expenses')
+      } else {
+        setError('Failed to delete expense. Please try again.')
+      }
+    }
   }
 
   // Calculate totals
@@ -62,14 +249,17 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
   // Get this week's expenses
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-  const thisWeekExpenses = expenses.filter(expense => new Date(expense.date) >= oneWeekAgo)
+  const thisWeekExpenses = expenses.filter(expense => {
+    const expenseDate = expense.date ? new Date(expense.date) : new Date()
+    return expenseDate >= oneWeekAgo
+  })
   const thisWeekTotal = thisWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0)
   
   // Get last week's expenses for comparison
   const twoWeeksAgo = new Date()
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
   const lastWeekExpenses = expenses.filter(expense => {
-    const expenseDate = new Date(expense.date)
+    const expenseDate = expense.date ? new Date(expense.date) : new Date()
     return expenseDate >= twoWeeksAgo && expenseDate < oneWeekAgo
   })
   const lastWeekTotal = lastWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0)
@@ -82,8 +272,9 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
 
   const categories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Education', 'Other']
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString?: string) => {
+    const date = dateString ? new Date(dateString) : new Date()
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -91,6 +282,24 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
   }
 
   const weekChange = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 : 0
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-[#001F3F] mb-2 tracking-wider">
+            💰 SMART BUDGET TRACKER
+          </h2>
+          <p className="text-[#001F3F] opacity-70">Loading your expenses...</p>
+        </div>
+        <div className="bg-white/60 border-4 border-[#007FFF] p-8 text-center" style={{ borderRadius: '0px' }}>
+          <div className="animate-spin w-8 h-8 border-4 border-[#007FFF] border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-[#001F3F] mt-4 font-bold">LOADING...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -103,6 +312,21 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
           Track your spending and optimize your financial habits!
         </p>
       </div>
+
+
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-100 border-4 border-red-500 p-4 text-center" style={{ borderRadius: '0px' }}>
+          <p className="text-red-700 font-bold">{error}</p>
+          <button 
+            onClick={() => setError('')}
+            className="mt-2 text-red-600 underline hover:text-red-800"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -230,10 +454,11 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
               
               <button
                 onClick={handleAddExpense}
-                className="bg-green-500 text-white px-6 py-2 border-2 border-green-600 hover:bg-green-600 transition-colors font-bold"
+                disabled={isAddingExpense}
+                className="bg-green-500 text-white px-6 py-2 border-2 border-green-600 hover:bg-green-600 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ borderRadius: '0px' }}
               >
-                ADD EXPENSE
+                {isAddingExpense ? 'ADDING...' : 'ADD EXPENSE'}
               </button>
             </div>
           </div>
@@ -249,7 +474,11 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
           
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {expenses
-              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .sort((a, b) => {
+                const dateA = a.date ? new Date(a.date).getTime() : new Date().getTime()
+                const dateB = b.date ? new Date(b.date).getTime() : new Date().getTime()
+                return dateB - dateA
+              })
               .map((expense) => (
               <div key={expense.id} className="flex items-center justify-between bg-white/80 p-3 border-2 border-[#007FFF]/30">
                 <div className="flex-1">

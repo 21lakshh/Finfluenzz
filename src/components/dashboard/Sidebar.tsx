@@ -1,12 +1,15 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   Home, 
   MessageSquare, 
   Trophy, 
   TrendingUp, 
   PiggyBank,
-  LogOut 
+  LogOut,
+  User
 } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
 import type { TabType } from '../../pages/Dashboard'
 
 interface SidebarProps {
@@ -56,6 +59,37 @@ const tabItems: TabItem[] = [
 ]
 
 export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps) {
+  const { user, isLoading, logout } = useAuth()
+  const navigate = useNavigate()
+
+  // Handle logout
+  const handleLogout = () => {
+    logout()
+    navigate('/signin')
+  }
+
+  // Get user level based on finance knowledge
+  const getUserLevel = () => {
+    if (!user) return 'Guest'
+    switch (user.financeKnowledge) {
+      case 'beginner': return 'Beginner'
+      case 'intermediate': return 'Player'
+      case 'advanced': return 'Pro'
+      default: return 'Beginner'
+    }
+  }
+
+  // Get progress percentage based on finance knowledge
+  const getProgressPercentage = () => {
+    if (!user) return 0
+    switch (user.financeKnowledge) {
+      case 'beginner': return 33
+      case 'intermediate': return 66
+      case 'advanced': return 100
+      default: return 33
+    }
+  }
+
   return (
     <div 
       className="bg-blue-100/80 border-r-4 border-[#007FFF] backdrop-blur-sm relative z-10 flex flex-col"
@@ -111,23 +145,55 @@ export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps)
       {/* User Info & Logout */}
       <div className="p-4 border-t-2 border-[#007FFF]/30">
         <div className="bg-white/60 border-2 border-[#007FFF] p-3 mb-3" style={{ borderRadius: '0px' }}>
-          <div className="text-sm font-bold text-[#001F3F] tracking-wide">
-            PLAYER: USER_001
-          </div>
-          <div className="text-xs text-[#001F3F] opacity-70">
-            Level: Beginner
-          </div>
-          <div className="flex items-center mt-2">
-            <div className="w-full bg-[#007FFF]/20 h-2 border border-[#007FFF]" style={{ borderRadius: '0px' }}>
-              <div className="bg-[#007FFF] h-full w-1/3" style={{ borderRadius: '0px' }}></div>
+          {isLoading ? (
+            <div className="animate-pulse">
+              <div className="flex items-center space-x-2 mb-2">
+                <User className="w-4 h-4 text-[#001F3F]" />
+                <div className="h-3 bg-[#007FFF]/30 w-24"></div>
+              </div>
+              <div className="h-2 bg-[#007FFF]/20 w-16 mb-2"></div>
+              <div className="h-2 bg-[#007FFF]/20 w-full"></div>
             </div>
-            <span className="text-xs text-[#001F3F] ml-2 font-mono">33%</span>
-          </div>
+          ) : user ? (
+            <>
+              <div className="flex items-center space-x-2 mb-1">
+                <User className="w-4 h-4 text-[#001F3F]" />
+                <div className="text-sm font-bold text-[#001F3F] tracking-wide">
+                  {user.username.toUpperCase()}
+                </div>
+              </div>
+              <div className="text-xs text-[#001F3F] opacity-70 mb-1">
+                {user.age} years • {user.employmentType}
+              </div>
+              <div className="text-xs text-[#001F3F] opacity-70 mb-2">
+                Level: {getUserLevel()}
+              </div>
+              <div className="flex items-center">
+                <div className="w-full bg-[#007FFF]/20 h-2 border border-[#007FFF]" style={{ borderRadius: '0px' }}>
+                  <div 
+                    className="bg-[#007FFF] h-full transition-all duration-300" 
+                    style={{ 
+                      borderRadius: '0px',
+                      width: `${getProgressPercentage()}%`
+                    }}
+                  ></div>
+                </div>
+                <span className="text-xs text-[#001F3F] ml-2 font-mono">{getProgressPercentage()}%</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-center">
+              <User className="w-8 h-8 text-[#001F3F] mx-auto mb-2 opacity-50" />
+              <div className="text-xs text-[#001F3F] opacity-70">Not logged in</div>
+            </div>
+          )}
         </div>
         
         <button 
-          className="w-full bg-red-500/80 hover:bg-red-600 text-white border-2 border-red-600 p-2 transition-colors flex items-center justify-center space-x-2"
+          onClick={handleLogout}
+          className="w-full bg-red-500/80 hover:bg-red-600 text-white border-2 border-red-600 p-2 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
           style={{ borderRadius: '0px' }}
+          disabled={isLoading}
         >
           <LogOut className="w-4 h-4" />
           <span className="text-sm font-bold tracking-wide">LOGOUT</span>

@@ -1,5 +1,6 @@
-import  { useState, useEffect } from 'react'
-import { Trophy, CheckCircle, Star, Clock, Calendar, RefreshCw, Bug } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
+import { Trophy, CheckCircle, Star, Clock, Calendar, RefreshCw } from 'lucide-react'
 import challengeAgent from '../../Agents/challengeAgent'
 import type { UserProfile, ExpenseItem, Challenge } from '../../Agents/challengeAgent'
 
@@ -7,10 +8,26 @@ interface ChallengesTabProps {
   userProfile?: Partial<UserProfile>
 }
 
+// Cache configuration
+const CACHE_KEY = 'finfluenzz-challenges-expenses-cache'
+const CHALLENGES_CACHE_KEY = 'finfluenzz-generated-challenges'
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+interface CachedExpenses {
+  data: ExpenseItem[]
+  timestamp: number
+}
+
+interface CachedChallenges {
+  challenges: Challenge[]
+  generatedAt: number
+}
+
 export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [loading, setLoading] = useState(false)
   const [allExpenses, setAllExpenses] = useState<ExpenseItem[]>([])
+  const [loadingExpenses, setLoadingExpenses] = useState(true)
 
   // Mock user profile data - in real app this would come from signup/profile
   const defaultProfile: UserProfile = {
@@ -21,37 +38,177 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
     weeklyExpenses: []
   }
 
-  // Get expenses from localStorage (from Budget Tracker)
-  useEffect(() => {
-    const loadExpenses = () => {
-      const saved = localStorage.getItem('finfluenzz-expenses')
-      const expenses = saved ? JSON.parse(saved) : []
-      setAllExpenses(expenses)
+  // Check if cached data is still valid
+  const isCacheValid = (): boolean => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (!cached) return false
+      
+      const { timestamp }: CachedExpenses = JSON.parse(cached)
+      const now = Date.now()
+      return (now - timestamp) < CACHE_DURATION
+    } catch {
+      return false
+    }
+  }
+
+  // Get cached data
+  const getCachedExpenses = (): ExpenseItem[] | null => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (!cached) return null
+      
+      const { data }: CachedExpenses = JSON.parse(cached)
+      return data
+    } catch {
+      return null
+    }
+  }
+
+  // Cache expenses data
+  const cacheExpenses = (expenses: ExpenseItem[]) => {
+    try {
+      const cacheData: CachedExpenses = {
+        data: expenses,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
+    } catch (error) {
+      console.warn('Failed to cache expenses:', error)
+    }
+  }
+
+  // Save challenges to localStorage
+  const saveChallenges = (challengeList: Challenge[]) => {
+    try {
+      const challengeData: CachedChallenges = {
+        challenges: challengeList,
+        generatedAt: Date.now()
+      }
+      localStorage.setItem(CHALLENGES_CACHE_KEY, JSON.stringify(challengeData))
+    } catch (error) {
+      console.warn('Failed to save challenges:', error)
+    }
+  }
+
+  // Load challenges from localStorage
+  const loadSavedChallenges = (): Challenge[] => {
+    try {
+      const saved = localStorage.getItem(CHALLENGES_CACHE_KEY)
+      if (!saved) return []
+      
+      const { challenges }: CachedChallenges = JSON.parse(saved)
+      return challenges || []
+    } catch (error) {
+      console.warn('Failed to load saved challenges:', error)
+      return []
+    }
+  }
+
+  // Clear saved challenges
+  const clearSavedChallenges = () => {
+    try {
+      localStorage.removeItem(CHALLENGES_CACHE_KEY)
+    } catch (error) {
+      console.warn('Failed to clear saved challenges:', error)
+    }
+  }
+
+  // Get when challenges were generated
+  const getChallengeGenerationTime = (): string | null => {
+    try {
+      const saved = localStorage.getItem(CHALLENGES_CACHE_KEY)
+      if (!saved) return null
+      
+      const { generatedAt }: CachedChallenges = JSON.parse(saved)
+      const date = new Date(generatedAt)
+      return date.toLocaleString()
+    } catch {
+      return null
+    }
+  }
+
+  // Load expenses with caching
+  const loadExpenses = async (forceRefresh = false) => {
+    // Use cached data if valid and not forcing refresh
+    if (!forceRefresh && isCacheValid()) {
+      const cachedData = getCachedExpenses()
+      if (cachedData) {
+        setAllExpenses(cachedData)
+        setLoadingExpenses(false)
+        return
+      }
     }
 
-    loadExpenses()
+    try {
+      setLoadingExpenses(true)
+      const response = await axios.get("https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/all", {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
+        }
+      })
+      
+      if (response.data && response.data.expenses) {
+        // Map backend response to frontend format
+        const mappedExpenses = response.data.expenses.map((expense: any) => ({
+          id: expense.id.toString(),
+          category: expense.category,
+          amount: expense.amount,
+          description: expense.description,
+          date: expense.createdAt // Use createdAt from backend
+        }))
+        
+        setAllExpenses(mappedExpenses)
+        cacheExpenses(mappedExpenses) // Cache the data
+      }
+    } catch (error) {
+      console.error('Error fetching expenses for challenges:', error)
+      
+      // Clear cache on auth errors to prevent data leakage
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        localStorage.removeItem(CACHE_KEY)
+        clearSavedChallenges() // Also clear saved challenges on auth error
+      }
+      
+      setAllExpenses([])
+    } finally {
+      setLoadingExpenses(false)
+    }
+  }
+
+  // Load data on component mount
+  useEffect(() => {
+    // Load expenses with smart caching
+    loadExpenses() // This will use cache if valid
     
-    // Listen for storage changes (when expenses are updated in Budget Tracker)
-    const handleStorageChange = () => {
-      loadExpenses()
+    // Load saved challenges
+    const savedChallenges = loadSavedChallenges()
+    if (savedChallenges.length > 0) {
+      setChallenges(savedChallenges)
     }
     
-    window.addEventListener('storage', handleStorageChange)
-    // Also listen for custom event when localStorage is updated in same tab
-    window.addEventListener('expensesUpdated', handleStorageChange)
+    // Listen for expense updates from Budget Tracker
+    const handleExpenseUpdate = () => {
+      loadExpenses(true) // Force refresh when expenses are updated
+    }
+    
+    window.addEventListener('expensesUpdated', handleExpenseUpdate)
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('expensesUpdated', handleStorageChange)
+      window.removeEventListener('expensesUpdated', handleExpenseUpdate)
     }
   }, [])
 
-  // Filter expenses to last week only
+  // Filter expenses to last week only using createdAt field
   const getLastWeekExpenses = (): ExpenseItem[] => {
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
     
-    return allExpenses.filter(expense => new Date(expense.date) >= oneWeekAgo)
+    return allExpenses.filter(expense => {
+      // Parse the ISO date string from createdAt field
+      const expenseDate = new Date(expense.date) // expense.date now contains createdAt from API
+      return expenseDate >= oneWeekAgo
+    })
   }
 
   const lastWeekExpenses = getLastWeekExpenses()
@@ -70,42 +227,19 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
     try {
       const newChallenges = await challengeAgent(finalProfile)
       setChallenges(newChallenges)
+      saveChallenges(newChallenges) // Persist the generated challenges
     } catch (error) {
       console.error('Failed to generate challenges:', error)
       // Fallback to some default challenges based on expenses
-      setChallenges(getDefaultChallenges())
+      const defaultChallenges = getDefaultChallenges()
+      setChallenges(defaultChallenges)
+      saveChallenges(defaultChallenges) // Persist the default challenges too
     } finally {
       setLoading(false)
     }
   }
 
-  // Test function with dummy data
-  const testChallengeGeneration = async () => {
-    setLoading(true)
-    try {
-      const dummyProfile: UserProfile = {
-        currentlyEarn: 'yes',
-        employmentType: 'student',
-        mainPurpose: 'saving',
-        financeKnowledge: 'beginner',
-        weeklyExpenses: [
-          { category: 'Food', amount: 450, description: 'Lunch at cafeteria' },
-          { category: 'Transport', amount: 120, description: 'Bus fare' },
-          { category: 'Entertainment', amount: 500, description: 'Movie tickets' },
-          { category: 'Food', amount: 85, description: 'Coffee' }
-        ]
-      }
-      
-      console.log('Testing with dummy profile:', dummyProfile)
-      const newChallenges = await challengeAgent(dummyProfile)
-      setChallenges(newChallenges)
-    } catch (error) {
-      console.error('Failed to generate test challenges:', error)
-      setChallenges(getDefaultChallenges())
-    } finally {
-      setLoading(false)
-    }
-  }
+
 
   const getDefaultChallenges = (): Challenge[] => {
     const weeklyTotal = lastWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0)
@@ -182,17 +316,19 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
   }
 
   const completeChallenge = (challengeId: string) => {
-    setChallenges(prev => 
-      prev.map(challenge => 
-        challenge.id === challengeId 
-          ? { ...challenge, completed: true }
-          : challenge
-      )
+    const updatedChallenges = challenges.map(challenge => 
+      challenge.id === challengeId 
+        ? { ...challenge, completed: true }
+        : challenge
     )
+    setChallenges(updatedChallenges)
+    saveChallenges(updatedChallenges) // Persist the completion
   }
 
   const removeCompletedChallenge = (challengeId: string) => {
-    setChallenges(prev => prev.filter(challenge => challenge.id !== challengeId))
+    const updatedChallenges = challenges.filter(challenge => challenge.id !== challengeId)
+    setChallenges(updatedChallenges)
+    saveChallenges(updatedChallenges) // Persist the removal
   }
 
   const getCategoryColor = (category: string) => {
@@ -235,7 +371,12 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
           <span>📊 LAST WEEK ANALYSIS</span>
         </h3>
         
-        {lastWeekExpenses.length > 0 ? (
+        {loadingExpenses ? (
+          <div className="text-center py-8">
+            <div className="animate-spin w-8 h-8 border-4 border-[#007FFF] border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-[#001F3F] font-bold">LOADING EXPENSES...</p>
+          </div>
+        ) : lastWeekExpenses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50/50 border-2 border-[#007FFF]/30 p-4 text-center">
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">TOTAL SPENT</p>
@@ -268,26 +409,39 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
           <div className="flex justify-center space-x-4">
             <button
               onClick={generateChallenges}
-              disabled={loading}
+              disabled={loading || loadingExpenses}
               className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-3 border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all font-bold tracking-wider disabled:opacity-50 flex items-center space-x-2"
               style={{ borderRadius: '0px' }}
             >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              <span>{loading ? '🎮 GENERATING...' : '🎮 GENERATE CHALLENGES'}</span>
+              <RefreshCw className={`w-5 h-5 ${(loading || loadingExpenses) ? 'animate-spin' : ''}`} />
+              <span>
+                {loadingExpenses ? '📊 LOADING DATA...' : loading ? '🎮 GENERATING...' : '🎮 GENERATE CHALLENGES'}
+              </span>
             </button>
             
             <button
-              onClick={testChallengeGeneration}
-              disabled={loading}
-              className="bg-orange-500 text-white px-6 py-3 border-2 border-orange-600 hover:bg-orange-600 transition-all font-bold tracking-wider disabled:opacity-50 flex items-center space-x-2"
+              onClick={() => loadExpenses(true)}
+              disabled={loadingExpenses}
+              className="bg-gray-600 text-white px-4 py-3 border-2 border-gray-700 hover:bg-gray-700 transition-all font-bold tracking-wider disabled:opacity-50 flex items-center space-x-2"
               style={{ borderRadius: '0px' }}
+              title="Refresh expense data from server"
             >
-              <Bug className="w-5 h-5" />
-              <span>TEST WITH DUMMY DATA</span>
+              <RefreshCw className={`w-4 h-4 ${loadingExpenses ? 'animate-spin' : ''}`} />
+              <span>REFRESH DATA</span>
             </button>
           </div>
           
-          {lastWeekExpenses.length === 0 && (
+          {!loadingExpenses && (
+            <div className="text-xs text-[#001F3F] opacity-60">
+              {isCacheValid() ? (
+                <span>📋 Using cached data (refreshes every 5 minutes)</span>
+              ) : (
+                <span>🔄 Data loaded from server</span>
+              )}
+            </div>
+          )}
+          
+          {!loadingExpenses && lastWeekExpenses.length === 0 && (
             <p className="text-sm text-[#001F3F] opacity-70">
               Will generate basic challenges without expense data
             </p>
@@ -298,9 +452,30 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
       {/* Challenges Display */}
       {challenges.length > 0 && (
         <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
-          <h3 className="text-2xl font-bold text-[#001F3F] mb-6 tracking-wide text-center">
-            🎯 YOUR PERSONALIZED CHALLENGES
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-[#001F3F] tracking-wide">
+              🎯 YOUR PERSONALIZED CHALLENGES
+            </h3>
+            <button
+              onClick={() => {
+                setChallenges([])
+                clearSavedChallenges()
+              }}
+              className="bg-red-500 text-white px-4 py-2 border-2 border-red-600 hover:bg-red-600 transition-colors font-bold text-sm"
+              style={{ borderRadius: '0px' }}
+              title="Clear all challenges and start fresh"
+            >
+              CLEAR ALL
+            </button>
+          </div>
+          
+          {getChallengeGenerationTime() && (
+            <div className="text-center mb-4">
+              <p className="text-xs text-[#001F3F] opacity-60">
+                Generated: {getChallengeGenerationTime()}
+              </p>
+            </div>
+          )}
           
           <div className="grid gap-4">
             {challenges.map((challenge) => (

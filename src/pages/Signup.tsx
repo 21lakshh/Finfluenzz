@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useAuth } from '../contexts/AuthContext'
 
 interface FormData {
   username: string
@@ -15,6 +16,7 @@ interface FormData {
 
 export default function Signup() {
   const navigate = useNavigate()
+  const { refreshUser } = useAuth()
   const [formData, setFormData] = useState<FormData>({
     username: '',
     password: '',
@@ -94,8 +96,11 @@ export default function Signup() {
       const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/signup", signupData)
       
       if (response.status === 200) {
-        localStorage.setItem('authToken', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+        localStorage.setItem('Authorization', response.data.token)
+        
+        // Refresh user data in auth context
+        await refreshUser()
+        
         navigate('/dashboard')
       }
     } catch (error) {
@@ -139,6 +144,13 @@ export default function Signup() {
       <div className="relative bg-blue-50/95 border-4 border-[#007FFF] rounded-none shadow-2xl w-full max-w-md p-8 backdrop-blur-sm z-10">
         {/* Header */}
         <div className="text-center mb-8">
+          <button
+            onClick={() => navigate('/')}
+            className="mb-4 text-[#007FFF] hover:text-[#001F3F] transition-colors text-xs font-bold tracking-wide flex items-center justify-center mx-auto space-x-1"
+          >
+            <span>←</span>
+            <span>[BACK TO HOME]</span>
+          </button>
           <h1 className="text-3xl font-bold text-[#001F3F] mb-2 tracking-wider">
             SIGN UP
           </h1>

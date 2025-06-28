@@ -2,9 +2,20 @@ import { Button as RetroButton } from "pixel-retroui";
 import {  TrendingUp } from "lucide-react";
 import { RetroGrid } from "./magicui/retro-grid";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const handleExploreFeatures = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden bg-gradient-to-b from-[#F0F8FF] to-white dark:from-gray-900 dark:to-black">
       {/* Overlay to blend white background */}
@@ -48,9 +59,9 @@ const HeroSection = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <RetroButton 
             className="bg-[#007FFF] hover:bg-[#001F3F] text-white px-8 py-4 text-lg font-minecraft border-4 border-[#001F3F] shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
-            onClick={() => navigate("/signup")}
+            onClick={handleExploreFeatures}
           >
-            Explore Features
+            {user ? 'Go to Dashboard' : 'Explore Features'}
             <TrendingUp className="w-5 h-5" />
           </RetroButton>
         

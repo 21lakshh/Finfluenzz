@@ -1,8 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "backend",
+  "name": "finfluenzz",
   "main": "src/index.ts",
-  "compatibility_date": "2025-06-28"
+  "compatibility_date": "2025-06-28",
+  "vars": {
+    "JWT_SECRET": "PMMMT",
+    "DATABASE_URL": "prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGlfa2V5IjoiMDFKWVRHNVRCNTIxN0NaTU0yQjU0QzJHMkoiLCJ0ZW5hbnRfaWQiOiIzYWYyZjEwZWNhOWU3ZDdlMWRlNWM3ODk4ZmQ3M2UwZDdkMWRiMjdjYmVjYzA4ZWE1NGFjYzRjNGQ2ZTMxMmI1IiwiaW50ZXJuYWxfc2VjcmV0IjoiMjRhZWUzN2QtYjZmNS00OTJiLWEyZjktMDE2ZTkyNzYwYWJmIn0.C4zZ4d28ua0YfwfC6OC_MzMwypin4JZ7sIJvNWjKM5c"
+  }
   // "compatibility_flags": [
   //   "nodejs_compat"
   // ],

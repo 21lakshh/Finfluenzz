@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 interface FormData {
   username: string
@@ -25,6 +26,7 @@ export default function Signup() {
     financeKnowledge: ''
   })
   const [errors, setErrors] = useState<Partial<FormData>>({})
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -58,20 +60,63 @@ export default function Signup() {
       newErrors.email = 'Please enter a valid email'
     }
 
-    // Age validation
-    if (formData.age && (isNaN(Number(formData.age)) || Number(formData.age) < 13 || Number(formData.age) > 100)) {
-      newErrors.age = 'Please enter a valid age (13-100)'
+    // Age validation  
+    if (formData.age && (isNaN(Number(formData.age)) || Number(formData.age) < 18 || Number(formData.age) > 100)) {
+      newErrors.age = 'Please enter a valid age (18-100)'
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (validateForm()) {
-      // Navigate to dashboard since no backend
-      navigate('/dashboard')
+    if (!validateForm()) return
+
+    setIsLoading(true)
+    setErrors({})
+
+    try {
+      // Transform frontend data to match backend schema
+      const signupData = {
+        email: formData.email,
+        password: formData.password,
+        username: formData.username,
+        age: parseInt(formData.age), // Convert to number
+        goal: formData.mainPurpose, // Map mainPurpose to goal
+        employmentType: formData.employmentType,
+        financeKnowledge: formData.financeKnowledge,
+        earn: formData.currentlyEarn === 'yes' // Convert "yes"/"no" to boolean
+      }
+
+      console.log('Sending signup data:', signupData)
+
+      const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/signup", signupData)
+      
+      if (response.status === 200) {
+        localStorage.setItem('authToken', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+        navigate('/dashboard')
+      }
+    } catch (error) {
+      console.error('Signup error:', error)
+      if (axios.isAxiosError(error) && error.response) {
+        const errorData = error.response.data
+        console.error('Error details:', errorData)
+        
+        // Handle specific errors
+        if (error.response.status === 409) {
+          setErrors({ email: 'Email or username already exists' })
+        } else if (error.response.status === 400) {
+          setErrors({ email: errorData.error || 'Invalid data provided' })
+        } else {
+          setErrors({ email: errorData.error || 'Signup failed. Please try again.' })
+        }
+      } else {
+        setErrors({ email: 'Network error. Please check your connection.' })
+      }
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -158,7 +203,7 @@ export default function Signup() {
               name="age"
               value={formData.age}
               onChange={handleInputChange}
-              min="13"
+              min="18"
               max="100"
               className="w-full px-3 py-2 bg-white border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none transition-colors font-mono"
               style={{ borderRadius: '0px' }}
@@ -249,10 +294,11 @@ export default function Signup() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white font-bold py-3 px-4 border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] hover:border-[#007FFF] transition-all duration-200 transform hover:scale-105 mt-6 tracking-wider"
+            disabled={isLoading}
+            className="w-full bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white font-bold py-3 px-4 border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] hover:border-[#007FFF] transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-6 tracking-wider"
             style={{ borderRadius: '0px' }}
           >
-            [SIGN UP]
+            {isLoading ? '[CREATING ACCOUNT...]' : '[SIGN UP]'}
           </button>
         </form>
 
@@ -261,7 +307,9 @@ export default function Signup() {
           <p className="text-[#001F3F] text-sm opacity-80">
             Already have an account?{' '}
             <button
-              onClick={() => navigate('/signin')}
+              onClick={async () => {
+                navigate('/signin')
+              }}
               className="text-[#007FFF] hover:text-[#001F3F] transition-colors font-bold"
             >
               [SIGN IN]

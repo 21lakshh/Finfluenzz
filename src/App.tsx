@@ -10,9 +10,9 @@ import Dashboard from './pages/Dashboard'
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
           <Route 
             path="/signin" 
             element={
@@ -37,8 +37,8 @@ function App() {
               </ProtectedRoute>
             } 
           />
-        </Routes>
-      </BrowserRouter>
+      </Routes>
+    </BrowserRouter>
     </AuthProvider>
   )
 }

@@ -105,7 +105,7 @@ Generate 3-4 personalized financial challenges for this user. Return ONLY a vali
 
     try {
         const result = await axios.post("https://api.groq.com/openai/v1/chat/completions", {
-            model: "llama3-8b-8192",
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.3,
             max_tokens: 2000,
             messages: [

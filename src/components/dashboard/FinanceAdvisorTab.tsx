@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Brain, MessageSquare, AlertTriangle } from 'lucide-react'
+import { Send, Brain, MessageSquare, AlertTriangle, TrendingUp, Coins } from 'lucide-react'
 import financeAdvisorAgent from '../../Agents/financeAdvisorAgent'
 import ProfessionalStockChart from '../charts/ProfessionalStockChart'
 import { stockAPI } from '../../services/stockAPI'
+import { extractAssetSymbol } from '../../utils/symbolUtils'
 import type { ChatMessage, AnalysisResponse } from '../../Agents/financeAdvisorAgent'
-import type { StockHistoricalData } from '../../services/stockAPI'
+import type { AssetHistoricalData, AssetType } from '../../services/stockAPI'
 
 interface ChatBubbleProps {
   message: string
   isUser: boolean
   analysis?: AnalysisResponse
-  chartData?: StockHistoricalData[]
+  chartData?: AssetHistoricalData[]
   symbol?: string
+  assetType?: AssetType
 }
 
-function ChatBubble({ message, isUser, analysis, chartData, symbol }: ChatBubbleProps) {
+function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }: ChatBubbleProps) {
   if (isUser) {
     return (
       <div className="flex justify-end mb-4">
@@ -31,18 +33,44 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol }: ChatBubble
         <div className="flex items-center space-x-2 mb-3">
           <Brain className="w-5 h-5 text-[#007FFF]" />
           <span className="font-bold text-[#001F3F] tracking-wide">FINANCE GURU</span>
+          {symbol && assetType && (
+            <div className="flex items-center space-x-2 ml-2">
+              {assetType === 'crypto' ? (
+                <Coins className="w-4 h-4 text-orange-500" />
+              ) : (
+                <TrendingUp className="w-4 h-4 text-green-500" />
+              )}
+              <span className="text-xs text-[#001F3F] opacity-70 font-bold">
+                {assetType === 'crypto' ? 'CRYPTO' : 'STOCK'}
+              </span>
+            </div>
+          )}
           {analysis && (
             <div className="flex items-center space-x-2 ml-4">
-              <div className={`px-2 py-1 text-xs font-bold ${
-                analysis.recommendation === 'BUY' ? 'bg-green-500 text-white' :
-                analysis.recommendation === 'SELL' ? 'bg-red-500 text-white' :
-                'bg-yellow-500 text-black'
-              }`} style={{ borderRadius: '0px' }}>
-                {analysis.recommendation}
-              </div>
-              <div className="text-xs text-[#001F3F] opacity-70">
-                {analysis.confidence}% confidence
-              </div>
+              {symbol ? (
+                <>
+                  <div className={`px-2 py-1 text-xs font-bold ${
+                    analysis.recommendation === 'BUY' ? 'bg-green-500 text-white' :
+                    analysis.recommendation === 'SELL' ? 'bg-red-500 text-white' :
+                    'bg-yellow-500 text-black'
+                  }`} style={{ borderRadius: '0px' }}>
+                    {analysis.recommendation}
+                  </div>
+                  {analysis.isFinancialAdvice && (
+                    <div className="text-xs text-[#001F3F] opacity-70">
+                      {analysis.confidence}% confidence
+                    </div>
+                  )}
+                </>
+              ) : analysis.isFinancialAdvice ? (
+                <div className="px-2 py-1 text-xs font-bold bg-blue-500 text-white" style={{ borderRadius: '0px' }}>
+                  GENERAL ADVICE
+                </div>
+              ) : (
+                <div className="px-2 py-1 text-xs font-bold bg-gray-500 text-white" style={{ borderRadius: '0px' }}>
+                  CASUAL CHAT
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -51,43 +79,77 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol }: ChatBubble
           <p className="text-[#001F3F] leading-relaxed whitespace-pre-wrap">{message}</p>
         </div>
 
-        {/* Analysis Summary Cards */}
-        {analysis && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-            <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
-              <p className="text-xs text-[#001F3F] opacity-70 font-bold">RISK</p>
-              <p className={`text-sm font-bold ${
-                analysis.riskLevel === 'LOW' ? 'text-green-600' :
-                analysis.riskLevel === 'HIGH' ? 'text-red-600' : 'text-yellow-600'
-              }`}>
-                {analysis.riskLevel}
-              </p>
-            </div>
-            <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
-              <p className="text-xs text-[#001F3F] opacity-70 font-bold">HORIZON</p>
-              <p className="text-sm font-bold text-[#001F3F]">{analysis.timeHorizon}</p>
-            </div>
-            <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
-              <p className="text-xs text-[#001F3F] opacity-70 font-bold">CONFIDENCE</p>
-              <p className="text-sm font-bold text-[#001F3F]">{analysis.confidence}%</p>
-            </div>
-            {analysis.priceTarget && (
-              <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
-                <p className="text-xs text-[#001F3F] opacity-70 font-bold">TARGET</p>
-                <p className="text-sm font-bold text-[#001F3F]">₹{analysis.priceTarget}</p>
+        {/* Analysis Summary Cards - Only show for financial advice */}
+        {analysis && analysis.isFinancialAdvice && (
+          <div className="mt-4">
+            {symbol ? (
+              // Asset-specific analysis (full details)
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                  <p className="text-xs text-[#001F3F] opacity-70 font-bold">RISK</p>
+                  <p className={`text-sm font-bold ${
+                    analysis.riskLevel === 'LOW' ? 'text-green-600' :
+                    analysis.riskLevel === 'HIGH' ? 'text-red-600' : 'text-yellow-600'
+                  }`}>
+                    {analysis.riskLevel}
+                  </p>
+                </div>
+                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                  <p className="text-xs text-[#001F3F] opacity-70 font-bold">HORIZON</p>
+                  <p className="text-sm font-bold text-[#001F3F]">{analysis.timeHorizon}</p>
+                </div>
+                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                  <p className="text-xs text-[#001F3F] opacity-70 font-bold">CONFIDENCE</p>
+                  <p className="text-sm font-bold text-[#001F3F]">{analysis.confidence}%</p>
+                </div>
+                {analysis.priceTarget && (
+                  <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                    <p className="text-xs text-[#001F3F] opacity-70 font-bold">TARGET</p>
+                    <p className="text-sm font-bold text-[#001F3F]">
+                      {assetType === 'crypto' ? '$' : '₹'}{analysis.priceTarget}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // General financial advice (simplified)
+              <div className="grid grid-cols-2 gap-2 max-w-md">
+                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                  <p className="text-xs text-[#001F3F] opacity-70 font-bold">RISK LEVEL</p>
+                  <p className={`text-sm font-bold ${
+                    analysis.riskLevel === 'LOW' ? 'text-green-600' :
+                    analysis.riskLevel === 'HIGH' ? 'text-red-600' : 'text-yellow-600'
+                  }`}>
+                    {analysis.riskLevel}
+                  </p>
+                </div>
+                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                  <p className="text-xs text-[#001F3F] opacity-70 font-bold">CONFIDENCE</p>
+                  <p className="text-sm font-bold text-[#001F3F]">{analysis.confidence}%</p>
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* Stock Chart */}
+        {/* Asset Chart */}
         {chartData && symbol && (
           <div className="mt-6">
+            <div className="flex items-center space-x-2 mb-3">
+              {assetType === 'crypto' ? (
+                <Coins className="w-5 h-5 text-orange-500" />
+              ) : (
+                <TrendingUp className="w-5 h-5 text-green-500" />
+              )}
+              <h3 className="text-lg font-bold text-[#001F3F]">
+                {symbol} {assetType === 'crypto' ? 'Price Chart' : 'Stock Chart'}
+              </h3>
+            </div>
             <ProfessionalStockChart 
               data={chartData} 
               symbol={symbol}
               height={350}
-              showVolume={true}
+              showVolume={false} // Hide volume for crypto since it's not always available
             />
           </div>
         )}
@@ -101,11 +163,12 @@ export default function FinanceAdvisorTab() {
     text: string
     isUser: boolean
     analysis?: AnalysisResponse
-    chartData?: StockHistoricalData[]
+    chartData?: AssetHistoricalData[]
     symbol?: string
+    assetType?: AssetType
   }>>([
     {
-      text: "Yo yo yo! 👋 FinanceGuru here, ready to help you navigate these markets with REAL data! 📈\n\nI'm your Gen Z finance friend who actually knows what they're talking about (no cap! 💯). I'm now connected to live APIs for:\n🔥 Real-time stock prices\n📊 Live technical indicators (RSI, MACD, SMA)\n📈 Actual historical charts\n🧠 AI-powered analysis\n\nTry asking me:\n• \"What's the deal with AAPL stock?\"\n• \"Should I buy Tesla right now?\"\n• \"NVDA price prediction?\"\n• \"Analyze GOOGL chart\"\n\nLet's make some money moves with REAL market data! 🚀💰💯",
+      text: "Yo! 👋 FinanceGuru here, ready to analyze stocks AND crypto with REAL data! 🚀\n\nI'm connected to live APIs for real-time prices, technical indicators, and market data. Just ask me about any stock or crypto!\n\n💡 Try:\n• \"How is TSLA doing?\"\n• \"Should I buy BTC?\"\n• \"Analyze AAPL stock\"\n• \"What's up with SOL?\"\n\nLet's make some money moves! 💰🔥",
       isUser: false
     }
   ])
@@ -134,13 +197,15 @@ export default function FinanceAdvisorTab() {
       // Get AI response
       const analysis = await financeAdvisorAgent(userMessage, chatHistory)
       
-      // Extract stock symbol to get chart data
-      const stockSymbol = extractStockSymbol(userMessage)
-      let chartData: StockHistoricalData[] | undefined
+      // Extract asset symbol and determine type
+      const assetSymbol = extractAssetSymbol(userMessage)
+      let chartData: AssetHistoricalData[] | undefined
+      let assetType: AssetType | undefined
       
-      if (stockSymbol) {
+      if (assetSymbol) {
         try {
-          chartData = await stockAPI.getHistoricalData(stockSymbol, 30)
+          assetType = stockAPI.getAssetType(assetSymbol)
+          chartData = await stockAPI.getAssetHistoricalData(assetSymbol, 30)
         } catch (error) {
           console.error('Error fetching chart data:', error)
         }
@@ -152,7 +217,8 @@ export default function FinanceAdvisorTab() {
         isUser: false, 
         analysis,
         chartData,
-        symbol: stockSymbol || undefined
+        symbol: assetSymbol || undefined,
+        assetType
       }])
 
       // Update chat history
@@ -180,12 +246,14 @@ export default function FinanceAdvisorTab() {
     }
   }
 
-  // Quick action buttons
+  // Enhanced quick action buttons for both stocks and crypto
   const quickActions = [
-    { label: "📈 AAPL Analysis", message: "Analyze AAPL stock for me" },
-    { label: "🚗 Tesla Vibes", message: "What's the deal with TSLA stock?" },
-    { label: "🔥 NVDA Check", message: "Should I buy NVIDIA right now?" },
-    { label: "📊 Market Pulse", message: "How are the markets looking today?" }
+    { label: "📈 AAPL Analysis", message: "Analyze AAPL stock for me", type: "stock" },
+    { label: "₿ Bitcoin Vibes", message: "What's the deal with BTC?", type: "crypto" },
+    { label: "🚗 Tesla Check", message: "Should I buy TSLA right now?", type: "stock" },
+    { label: "⚡ Ethereum Deep Dive", message: "Give me an ETH analysis", type: "crypto" },
+    { label: "🔥 NVDA Trends", message: "NVIDIA stock analysis", type: "stock" },
+    { label: "🌟 Solana Surge", message: "How is SOL performing today?", type: "crypto" }
   ]
 
   return (
@@ -199,23 +267,36 @@ export default function FinanceAdvisorTab() {
               🤖 FINANCE ADVISOR
             </h2>
             <p className="text-[#001F3F] opacity-70">
-              Gen Z AI that knows finance • Real-time stock analysis • No cap! 💯
+              Gen Z AI • Stocks & Crypto Analysis • Real-time data • No cap! 💯
             </p>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={() => setInputValue(action.message)}
-              className="bg-blue-50 text-[#001F3F] px-3 py-1 border-2 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-colors text-sm font-bold"
-              style={{ borderRadius: '0px' }}
-            >
-              {action.label}
-            </button>
-          ))}
+        {/* Enhanced Quick Actions */}
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center space-x-2 mb-2">
+            <TrendingUp className="w-4 h-4 text-green-500" />
+            <span className="text-sm font-bold text-[#001F3F]">STOCKS</span>
+            <div className="flex-1 h-px bg-[#007FFF] opacity-30"></div>
+            <Coins className="w-4 h-4 text-orange-500" />
+            <span className="text-sm font-bold text-[#001F3F]">CRYPTO</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => setInputValue(action.message)}
+                className={`px-3 py-1 border-2 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-colors text-sm font-bold ${
+                  action.type === 'crypto' 
+                    ? 'bg-orange-50 text-orange-700 hover:bg-orange-500' 
+                    : 'bg-green-50 text-green-700 hover:bg-green-500'
+                }`}
+                style={{ borderRadius: '0px' }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -230,6 +311,7 @@ export default function FinanceAdvisorTab() {
               analysis={message.analysis}
               chartData={message.chartData}
               symbol={message.symbol}
+              assetType={message.assetType}
             />
           ))}
           
@@ -260,7 +342,7 @@ export default function FinanceAdvisorTab() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me about any stock! (e.g., 'What's happening with AAPL?')"
+            placeholder="Ask me about any stock or crypto! Try: 'How is Tesla doing?' or 'BTC analysis'"
             className="flex-1 p-3 border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none resize-none font-mono"
             style={{ borderRadius: '0px' }}
             rows={2}
@@ -276,48 +358,20 @@ export default function FinanceAdvisorTab() {
           </button>
         </div>
         
-        {/* Disclaimer */}
-        <div className="mt-3 flex items-center space-x-2 text-xs text-[#001F3F] opacity-60">
-          <AlertTriangle className="w-4 h-4" />
-          <p>Not financial advice • Do your own research • Markets are risky fr fr</p>
+        {/* Help Text & Disclaimer */}
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center space-x-2 text-xs text-[#007FFF] font-medium">
+            <span>💡</span>
+            <p>Pro tip: If I don't understand, try exact names like "TSLA", "BTC", "NVDA", "ETH" or "SOL"</p>
+          </div>
+          <div className="flex items-center space-x-2 text-xs text-[#001F3F] opacity-60">
+            <AlertTriangle className="w-4 h-4" />
+            <p>Not financial advice • DYOR • Stocks & crypto are risky AF • CoinGecko & stock APIs for data</p>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-// Helper function to extract stock symbol
-function extractStockSymbol(message: string): string | null {
-  const patterns = [
-    /\$([A-Z]{1,5})\b/g,
-    /\b([A-Z]{2,5})\s+stock/gi,
-    /\b([A-Z]{2,5})\s+price/gi,
-    /about\s+([A-Z]{2,5})\b/gi,
-  ]
-
-  for (const pattern of patterns) {
-    const match = pattern.exec(message)
-    if (match) {
-      return match[1].toUpperCase()
-    }
-  }
-
-  const companyMap: Record<string, string> = {
-    'apple': 'AAPL',
-    'google': 'GOOGL',
-    'microsoft': 'MSFT',
-    'tesla': 'TSLA',
-    'nvidia': 'NVDA',
-    'amazon': 'AMZN',
-    'meta': 'META'
-  }
-
-  const lowerMessage = message.toLowerCase()
-  for (const [company, symbol] of Object.entries(companyMap)) {
-    if (lowerMessage.includes(company)) {
-      return symbol
-    }
-  }
-
-  return null
-} 
+ 

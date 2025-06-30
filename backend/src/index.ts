@@ -297,22 +297,169 @@ app.delete('/api/challenge/delete/all', authmiddleware, async (c) => {
 
 // completed challenge, upon delete reward xp to user
 app.delete('/api/challenge/delete/:id', authmiddleware, async (c) => {
-  const userId = c.get('userId')
-  const { id } = c.req.param()
-  const challenge = await prisma.challenge.delete({
-    where: { id, userId }
-  })
-  const user = await prisma.user.findUnique({
-    where: { id: userId }
-  })
-  if (user) {
-    user.earnedXp += challenge.xpReward
-    await prisma.user.update({
-      where: { id: userId },
-      data: { earnedXp: user.earnedXp }
+  try {
+    const userId = c.get('userId')
+    const { id } = c.req.param()
+    
+    const challenge = await prisma.challenge.delete({
+      where: { id, userId }
     })
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    if (user) {
+      // Calculate new XP and check for level up
+      const newXp = user.earnedXp + challenge.xpReward
+      const newCompletedChallenges = user.completedChallenges + 1
+      
+      // XP requirements for leveling (same as frontend)
+      const XP_REQUIREMENTS = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700, 3250, 3850, 4500, 5200, 5950, 6750, 7600, 8500, 9450, 10450]
+      
+      // Determine new level based on XP (automatic level up)
+      let newLevel = 1
+      for (let i = XP_REQUIREMENTS.length - 1; i >= 0; i--) {
+        if (newXp >= XP_REQUIREMENTS[i]) {
+          newLevel = i + 1
+          break
+        }
+      }
+      
+      await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          earnedXp: newXp,
+          completedChallenges: newCompletedChallenges,
+          currentLevel: newLevel
+        }
+      })
+    }
+    
+    return c.json({ challenge })
+  } catch (error) {
+    console.error('Error completing challenge:', error)
+    return c.json({ error: 'Failed to complete challenge' }, 500)
   }
-  return c.json({ challenge })
+})
+
+// Level up user manually (if they want to level up when eligible)
+app.post('/api/user/levelup', authmiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+    
+    // XP requirements for leveling
+    const XP_REQUIREMENTS = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700, 3250, 3850, 4500, 5200, 5950, 6750, 7600, 8500, 9450, 10450]
+    
+    // Check if user can level up
+    const currentLevel = user.currentLevel
+    const currentXp = user.earnedXp
+    const xpForNextLevel = XP_REQUIREMENTS[currentLevel] || XP_REQUIREMENTS[XP_REQUIREMENTS.length - 1]
+    
+    if (currentXp < xpForNextLevel || currentLevel >= XP_REQUIREMENTS.length) {
+      return c.json({ error: 'Not enough XP to level up or already at max level' }, 400)
+    }
+    
+    // Level up the user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { currentLevel: currentLevel + 1 },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        age: true,
+        goal: true,
+        employmentType: true,
+        financeKnowledge: true,
+        earn: true,
+        earnedXp: true,
+        completedChallenges: true,
+        currentLevel: true,
+      }
+    })
+    
+    return c.json({ 
+      user: updatedUser,
+      message: `Congratulations! You are now level ${updatedUser.currentLevel}!`
+    })
+  } catch (error) {
+    console.error('Error leveling up user:', error)
+    return c.json({ error: 'Failed to level up user' }, 500)
+  }
+})
+
+// Recalculate and fix user level based on current XP
+app.post('/api/user/fix-level', authmiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+    
+    // XP requirements for leveling
+    const XP_REQUIREMENTS = [0, 100, 250, 450, 700, 1000, 1350, 1750, 2200, 2700, 3250, 3850, 4500, 5200, 5950, 6750, 7600, 8500, 9450, 10450]
+    
+    // Calculate correct level based on current XP
+    let correctLevel = 1
+    for (let i = XP_REQUIREMENTS.length - 1; i >= 0; i--) {
+      if (user.earnedXp >= XP_REQUIREMENTS[i]) {
+        correctLevel = i + 1
+        break
+      }
+    }
+    
+    // Update user level if it's incorrect
+    if (correctLevel !== user.currentLevel) {
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { currentLevel: correctLevel },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          age: true,
+          goal: true,
+          employmentType: true,
+          financeKnowledge: true,
+          earn: true,
+          earnedXp: true,
+          completedChallenges: true,
+          currentLevel: true,
+        }
+      })
+      
+      return c.json({ 
+        user: updatedUser,
+        message: `Level corrected! You are now level ${correctLevel} (was ${user.currentLevel})`,
+        levelChanged: true,
+        oldLevel: user.currentLevel,
+        newLevel: correctLevel
+      })
+    } else {
+      return c.json({ 
+        user,
+        message: `Level is already correct: Level ${correctLevel}`,
+        levelChanged: false
+      })
+    }
+  } catch (error) {
+    console.error('Error fixing user level:', error)
+    return c.json({ error: 'Failed to fix user level' }, 500)
+  }
 })
 
 export default app

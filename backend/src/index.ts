@@ -15,6 +15,9 @@ const signupSchema = z.object({
   employmentType: z.string().min(3),
   financeKnowledge: z.string().min(3),
   earn: z.boolean(),
+  earnedXp: z.number().min(0),
+  completedChallenges: z.number().min(0),
+  currentLevel: z.number().min(1),
 })
 
 const signinSchema = z.object({
@@ -29,9 +32,9 @@ app.use('*', cors())
 app.post('/api/signup', async (c) => {
 
   try {
-    const { email, password, username, age, goal, employmentType, financeKnowledge, earn } = await c.req.json()
+    const { email, password, username, age, goal, employmentType, financeKnowledge, earn, earnedXp, completedChallenges, currentLevel } = await c.req.json()
 
-    const parsed = signupSchema.safeParse({ email, password, username, age, goal, employmentType, financeKnowledge, earn })
+    const parsed = signupSchema.safeParse({ email, password, username, age, goal, employmentType, financeKnowledge, earn, earnedXp, completedChallenges, currentLevel })
 
     if (!parsed.success) {
       return c.json({ error: parsed.error.message }, 400)
@@ -49,6 +52,9 @@ app.post('/api/signup', async (c) => {
         employmentType: true,
         financeKnowledge: true,
         earn: true,
+        earnedXp: true,
+        completedChallenges: true,
+        currentLevel: true,
       }
     })
 
@@ -128,6 +134,9 @@ app.get('/api/me', authmiddleware, async (c) => {
       employmentType: true,
       financeKnowledge: true,
       earn: true,
+      earnedXp: true,
+      completedChallenges: true,
+      currentLevel: true,
     }
   })
   return c.json({ user })
@@ -179,6 +188,131 @@ app.delete('/api/expense/delete/:id', authmiddleware, async (c) => {
 })
 
 // challenges 
+const addChallengeSchema = z.object({
+  title: z.string().min(3),
+  description: z.string().min(3),
+  category: z.string().min(3),
+  difficulty: z.string().min(3),
+  xpReward: z.number().min(0),
+  deadline: z.string().min(3),
+  emoji: z.string().min(1),
+  completed: z.boolean().optional(),
+})
 
+app.post('/api/challenge/add', authmiddleware, async (c) => {
+  const userId = c.get('userId')
+  const body = await c.req.json()
+
+  // Check if it's a single challenge or array of challenges
+  const challengesData = Array.isArray(body) ? body : [body]
+
+  // Validate each challenge
+  const validatedChallenges = []
+  for (const challengeData of challengesData) {
+    const { title, description, category, difficulty, xpReward, deadline, emoji, completed } = challengeData
+    const parsed = addChallengeSchema.safeParse({ title, description, category, difficulty, xpReward, deadline, emoji, completed })
+    
+    if (!parsed.success) {
+      return c.json({ error: `Invalid challenge data: ${parsed.error.message}` }, 400)
+    }
+    
+    validatedChallenges.push({
+      title,
+      description,
+      category,
+      difficulty,
+      xpReward,
+      deadline,
+      emoji,
+      userId,
+      completed
+    })
+  }
+
+  try {
+    // Create all challenges in a single transaction
+    const challenges = await prisma.challenge.createMany({
+      data: validatedChallenges,
+      skipDuplicates: true
+    })
+
+    // Get the created challenges with full data
+    const createdChallenges = await prisma.challenge.findMany({
+      where: {
+        userId,
+        title: { in: validatedChallenges.map(c => c.title) }
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        difficulty: true,
+        xpReward: true,
+        deadline: true,
+        emoji: true,
+        completed: true,
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: validatedChallenges.length
+    })
+
+    return c.json({ 
+      challenges: createdChallenges,
+      count: challenges.count 
+    })
+  } catch (error) {
+    console.error('Error creating challenges:', error)
+    return c.json({ error: 'Failed to create challenges' }, 500)
+  }
+})
+
+// get all current challenges
+app.get('/api/challenge/all', authmiddleware, async (c) => {
+  const userId = c.get('userId')
+  const challenges = await prisma.challenge.findMany({
+    where: { userId }
+  })
+  return c.json({ challenges })
+})
+
+// delete all challenges (must come before /:id route)
+app.delete('/api/challenge/delete/all', authmiddleware, async (c) => {
+  try {
+    const userId = c.get('userId')
+    const result = await prisma.challenge.deleteMany({
+      where: { userId }
+    })
+    return c.json({ 
+      message: 'All challenges deleted successfully',
+      count: result.count 
+    })
+  } catch (error) {
+    console.error('Error deleting all challenges:', error)
+    return c.json({ error: 'Failed to delete all challenges' }, 500)
+  }
+})
+
+// completed challenge, upon delete reward xp to user
+app.delete('/api/challenge/delete/:id', authmiddleware, async (c) => {
+  const userId = c.get('userId')
+  const { id } = c.req.param()
+  const challenge = await prisma.challenge.delete({
+    where: { id, userId }
+  })
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  })
+  if (user) {
+    user.earnedXp += challenge.xpReward
+    await prisma.user.update({
+      where: { id: userId },
+      data: { earnedXp: user.earnedXp }
+    })
+  }
+  return c.json({ challenge })
+})
 
 export default app

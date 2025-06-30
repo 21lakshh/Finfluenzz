@@ -25,7 +25,11 @@ model User {
   financeKnowledge String
   earn             Boolean
   createdAt        DateTime  @default(now())
+  earnedXp         Int       @default(0)
+  completedChallenges Int       @default(0)
+  currentLevel       Int       @default(1)
   expenses         Expense[]
+  challenges       Challenge[]
 }
 
 model Expense {
@@ -35,5 +39,20 @@ model Expense {
   description String
   createdAt   DateTime @default(now())
   userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Challenge {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  category    String
+  difficulty  String
+  xpReward    Int
+  deadline    String
+  emoji       String
+  createdAt   DateTime @default(now())
+  userId      String
+  completed   Boolean @default(false)
   user        User     @relation(fields: [userId], references: [id])
 }

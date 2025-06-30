@@ -2,6 +2,7 @@ import type { TabType } from '../../pages/Dashboard'
 import ChallengesTab from './ChallengesTab'
 import BudgetTracker from './BudgetTracker'
 import FinanceAdvisorTab from './FinanceAdvisorTab'
+import { useUser } from '../../hooks/useUser'
 
 interface DashboardContentProps {
   activeTab: TabType
@@ -10,6 +11,22 @@ interface DashboardContentProps {
 }
 
 export default function DashboardContent({ activeTab, sidebarWidth, isMobile = false }: DashboardContentProps) {
+  const { user, levelInfo, getLevelName, fixUserLevel } = useUser()
+
+  const handleFixLevel = async () => {
+    try {
+      const result = await fixUserLevel()
+      if (result?.levelChanged) {
+        alert(`Level fixed! You are now Level ${result.newLevel} (was Level ${result.oldLevel})`)
+      } else {
+        alert('Your level is already correct!')
+      }
+    } catch (error) {
+      console.error('Error fixing level:', error)
+      alert('Failed to fix level')
+    }
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'finance-advisor':
@@ -62,6 +79,29 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
               }`}>
                 Select a tab from the sidebar to get started!
               </p>
+              {user && (
+                <div className="mt-4">
+                  <p className={`text-[#001F3F] font-bold ${
+                    isMobile ? 'text-sm' : 'text-base'
+                  }`}>
+                    Welcome back, {user.username}! 
+                  </p>
+                  <p className={`text-[#001F3F] opacity-70 ${
+                    isMobile ? 'text-xs' : 'text-sm'
+                  }`}>
+                    Level {levelInfo.currentLevel} {getLevelName(levelInfo.currentLevel)} | {levelInfo.currentXp} XP
+                  </p>
+                  
+                  {/* Temporary Fix Level Button */}
+                  <button
+                    onClick={handleFixLevel}
+                    className="mt-4 bg-[#007FFF] hover:bg-[#005FBF] text-white px-4 py-2 text-sm font-bold border-2 border-[#001F3F]"
+                    style={{ borderRadius: '0px' }}
+                  >
+                    🔧 FIX LEVEL (TEMP)
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )
@@ -93,7 +133,7 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
             }`}></div>
           </div>
           
-          {/* Stats Cards */}
+          {/* Dynamic Stats Cards */}
           <div className={`flex space-x-4 ${
             isMobile ? 'justify-center' : ''
           }`}>
@@ -103,7 +143,9 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
               <div className="text-xs text-[#001F3F] opacity-70">LEVEL</div>
               <div className={`font-bold text-[#001F3F] ${
                 isMobile ? 'text-base' : 'text-lg'
-              }`}>1</div>
+              }`}>
+                {user ? levelInfo.currentLevel : '-'}
+              </div>
             </div>
             <div className={`bg-white/60 border-2 border-[#007FFF] ${
               isMobile ? 'p-2' : 'p-3'
@@ -111,15 +153,19 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
               <div className="text-xs text-[#001F3F] opacity-70">XP</div>
               <div className={`font-bold text-[#001F3F] ${
                 isMobile ? 'text-base' : 'text-lg'
-              }`}>125</div>
+              }`}>
+                {user ? levelInfo.currentXp : '-'}
+              </div>
             </div>
             <div className={`bg-white/60 border-2 border-[#007FFF] ${
               isMobile ? 'p-2' : 'p-3'
             }`} style={{ borderRadius: '0px' }}>
-              <div className="text-xs text-[#001F3F] opacity-70">STREAK</div>
+              <div className="text-xs text-[#001F3F] opacity-70">PROGRESS</div>
               <div className={`font-bold text-[#001F3F] ${
                 isMobile ? 'text-base' : 'text-lg'
-              }`}>3</div>
+              }`}>
+                {user ? `${Math.round(levelInfo.progressPercentage)}%` : '-'}
+              </div>
             </div>
           </div>
         </div>
@@ -135,6 +181,7 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
         <div className="absolute bottom-4 right-4">
           <div className="bg-[#007FFF]/10 border border-[#007FFF] p-2 text-xs text-[#001F3F] font-mono" style={{ borderRadius: '0px' }}>
             FINFLUENZZ v1.0 | Active Tab: {activeTab.toUpperCase().replace('-', ' ')}
+            {user && ` | ${getLevelName(levelInfo.currentLevel)}`}
           </div>
         </div>
       )}

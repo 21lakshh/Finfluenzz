@@ -1,5 +1,4 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import { 
   Home, 
   MessageSquare, 
@@ -11,6 +10,7 @@ import {
   X
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { logout as authLogout } from '../../utils/auth'
 import type { TabType } from '../../pages/Dashboard'
 
 interface SidebarProps {
@@ -62,36 +62,13 @@ const tabItems: TabItem[] = [
 ]
 
 export default function Sidebar({ activeTab, onTabChange, width, isMobile = false, onClose }: SidebarProps) {
-  const { user, isLoading, logout } = useAuth()
-  const navigate = useNavigate()
-
-  // Handle logout
+  const { user, isLoading } = useAuth()
+  
+  // Handle logout with comprehensive cache clearing
   const handleLogout = () => {
-    logout()
-    navigate('/signin')
+    authLogout() // This clears all cache and redirects
   }
 
-  // Get user level based on finance knowledge
-  const getUserLevel = () => {
-    if (!user) return 'Guest'
-    switch (user.financeKnowledge) {
-      case 'beginner': return 'Beginner'
-      case 'intermediate': return 'Player'
-      case 'advanced': return 'Pro'
-      default: return 'Beginner'
-    }
-  }
-
-  // Get progress percentage based on finance knowledge
-  const getProgressPercentage = () => {
-    if (!user) return 0
-    switch (user.financeKnowledge) {
-      case 'beginner': return 33
-      case 'intermediate': return 66
-      case 'advanced': return 100
-      default: return 33
-    }
-  }
 
   return (
     <div 
@@ -190,21 +167,6 @@ export default function Sidebar({ activeTab, onTabChange, width, isMobile = fals
               </div>
               <div className="text-xs text-[#001F3F] opacity-70 mb-1">
                 {user.age} years • {user.employmentType}
-              </div>
-              <div className="text-xs text-[#001F3F] opacity-70 mb-2">
-                Level: {getUserLevel()}
-              </div>
-              <div className="flex items-center">
-                <div className="w-full bg-[#007FFF]/20 h-2 border border-[#007FFF]" style={{ borderRadius: '0px' }}>
-                  <div 
-                    className="bg-[#007FFF] h-full transition-all duration-300" 
-                    style={{ 
-                      borderRadius: '0px',
-                      width: `${getProgressPercentage()}%`
-                    }}
-                  ></div>
-                </div>
-                <span className="text-xs text-[#001F3F] ml-2 font-mono">{getProgressPercentage()}%</span>
               </div>
             </>
           ) : (

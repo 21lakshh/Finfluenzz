@@ -1,646 +1,408 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { Trophy, CheckCircle, Star, Clock, Calendar, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import { Trophy, CheckCircle, Star, Clock,  RefreshCw, Plus, Trash2, Zap, Target } from 'lucide-react'
+import { useChallenges, type Challenge } from '../../hooks/useChallenges'
+import { useUser } from '../../hooks/useUser'
+import { useExpenses, type Expense } from '../../hooks/useExpenses'
 import challengeAgent from '../../Agents/challengeAgent'
-import type { UserProfile, ExpenseItem, Challenge } from '../../Agents/challengeAgent'
+import type { UserProfile, Challenge as AgentChallenge } from '../../Agents/challengeAgent'
 import { useIsMobile } from '../../hooks/use-Mobile'
 
 interface ChallengesTabProps {
   userProfile?: Partial<UserProfile>
 }
 
-// Cache configuration
-const CACHE_KEY = 'finfluenzz-challenges-expenses-cache'
-const CHALLENGES_CACHE_KEY = 'finfluenzz-generated-challenges'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
-
-interface CachedExpenses {
-  data: ExpenseItem[]
-  timestamp: number
-}
-
-interface CachedChallenges {
-  challenges: Challenge[]
-  generatedAt: number
-}
-
 export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
   const isMobile = useIsMobile()
-  const [challenges, setChallenges] = useState<Challenge[]>([])
-  const [loading, setLoading] = useState(false)
-  const [allExpenses, setAllExpenses] = useState<ExpenseItem[]>([])
-  const [loadingExpenses, setLoadingExpenses] = useState(true)
+  const [generatingChallenges, setGeneratingChallenges] = useState(false)
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false)
 
-  // Mock user profile data - in real app this would come from signup/profile
+  // Use custom hooks
+  const {
+    isLoading: challengesLoading,
+    error: challengesError,
+    addMultipleChallenges,
+    completeChallenge,
+    deleteAllChallenges,
+    refreshChallenges,
+    stats,
+    activeChallenges
+  } = useChallenges()
+
+  const {
+    user,
+    levelInfo,
+    getLevelName,
+    fixUserLevel
+  } = useUser()
+
+  const {
+    fetchExpenses,
+    isLoading: expensesLoading
+  } = useExpenses()
+
+  // Default user profile
   const defaultProfile: UserProfile = {
-    currentlyEarn: 'yes',
-    employmentType: 'student',
-    mainPurpose: 'saving',
-    financeKnowledge: 'beginner',
+    currentlyEarn: userProfile?.currentlyEarn || 'yes',
+    employmentType: userProfile?.employmentType || 'student',
+    mainPurpose: userProfile?.mainPurpose || 'saving',
+    financeKnowledge: userProfile?.financeKnowledge || 'beginner',
     weeklyExpenses: []
   }
 
-  // Check if cached data is still valid
-  const isCacheValid = (): boolean => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY)
-      if (!cached) return false
-      
-      const { timestamp }: CachedExpenses = JSON.parse(cached)
-      const now = Date.now()
-      return (now - timestamp) < CACHE_DURATION
-    } catch {
-      return false
-    }
-  }
-
-  // Get cached data
-  const getCachedExpenses = (): ExpenseItem[] | null => {
-    try {
-      const cached = localStorage.getItem(CACHE_KEY)
-      if (!cached) return null
-      
-      const { data }: CachedExpenses = JSON.parse(cached)
-      return data
-    } catch {
-      return null
-    }
-  }
-
-  // Cache expenses data
-  const cacheExpenses = (expenses: ExpenseItem[]) => {
-    try {
-      const cacheData: CachedExpenses = {
-        data: expenses,
-        timestamp: Date.now()
-      }
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
-    } catch (error) {
-      console.warn('Failed to cache expenses:', error)
-    }
-  }
-
-  // Save challenges to localStorage
-  const saveChallenges = (challengeList: Challenge[]) => {
-    try {
-      const challengeData: CachedChallenges = {
-        challenges: challengeList,
-        generatedAt: Date.now()
-      }
-      localStorage.setItem(CHALLENGES_CACHE_KEY, JSON.stringify(challengeData))
-    } catch (error) {
-      console.warn('Failed to save challenges:', error)
-    }
-  }
-
-  // Load challenges from localStorage
-  const loadSavedChallenges = (): Challenge[] => {
-    try {
-      const saved = localStorage.getItem(CHALLENGES_CACHE_KEY)
-      if (!saved) return []
-      
-      const { challenges }: CachedChallenges = JSON.parse(saved)
-      return challenges || []
-    } catch (error) {
-      console.warn('Failed to load saved challenges:', error)
-      return []
-    }
-  }
-
-  // Clear saved challenges
-  const clearSavedChallenges = () => {
-    try {
-      localStorage.removeItem(CHALLENGES_CACHE_KEY)
-    } catch (error) {
-      console.warn('Failed to clear saved challenges:', error)
-    }
-  }
-
-  // Get when challenges were generated
-  const getChallengeGenerationTime = (): string | null => {
-    try {
-      const saved = localStorage.getItem(CHALLENGES_CACHE_KEY)
-      if (!saved) return null
-      
-      const { generatedAt }: CachedChallenges = JSON.parse(saved)
-      const date = new Date(generatedAt)
-      return date.toLocaleString()
-    } catch {
-      return null
-    }
-  }
-
-  // Load expenses with caching
-  const loadExpenses = async (forceRefresh = false) => {
-    // Use cached data if valid and not forcing refresh
-    if (!forceRefresh && isCacheValid()) {
-      const cachedData = getCachedExpenses()
-      if (cachedData) {
-        setAllExpenses(cachedData)
-        setLoadingExpenses(false)
-        return
-      }
-    }
-
-    try {
-      setLoadingExpenses(true)
-      const response = await axios.get("https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/all", {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
-        }
-      })
-      
-      if (response.data && response.data.expenses) {
-        // Map backend response to frontend format
-        const mappedExpenses = response.data.expenses.map((expense: any) => ({
-          id: expense.id.toString(),
-          category: expense.category,
-          amount: expense.amount,
-          description: expense.description,
-          date: expense.createdAt // Use createdAt from backend
-        }))
-        
-        setAllExpenses(mappedExpenses)
-        cacheExpenses(mappedExpenses) // Cache the data
-      }
-    } catch (error) {
-      console.error('Error fetching expenses for challenges:', error)
-      
-      // Clear cache on auth errors to prevent data leakage
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        localStorage.removeItem(CACHE_KEY)
-        clearSavedChallenges() // Also clear saved challenges on auth error
-      }
-      
-      setAllExpenses([])
-    } finally {
-      setLoadingExpenses(false)
-    }
-  }
-
-  // Load data on component mount
-  useEffect(() => {
-    // Load expenses with smart caching
-    loadExpenses() // This will use cache if valid
-    
-    // Load saved challenges
-    const savedChallenges = loadSavedChallenges()
-    if (savedChallenges.length > 0) {
-      setChallenges(savedChallenges)
-    }
-    
-    // Listen for expense updates from Budget Tracker
-    const handleExpenseUpdate = () => {
-      loadExpenses(true) // Force refresh when expenses are updated
-    }
-    
-    window.addEventListener('expensesUpdated', handleExpenseUpdate)
-    
-    return () => {
-      window.removeEventListener('expensesUpdated', handleExpenseUpdate)
-    }
-  }, [])
-
-  // Filter expenses to last week only using createdAt field
-  const getLastWeekExpenses = (): ExpenseItem[] => {
-    const oneWeekAgo = new Date()
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-    
-    return allExpenses.filter(expense => {
-      // Parse the ISO date string from createdAt field
-      const expenseDate = new Date(expense.date) // expense.date now contains createdAt from API
-      return expenseDate >= oneWeekAgo
-    })
-  }
-
-  const lastWeekExpenses = getLastWeekExpenses()
-  const finalProfile = { 
-    ...defaultProfile, 
-    ...userProfile, 
-    weeklyExpenses: lastWeekExpenses.map(expense => ({
+  // Convert Expense to SimpleExpenseItem format for the agent
+  const convertToSimpleExpenses = (expenses: Expense[]) => {
+    return expenses.map(expense => ({
       category: expense.category,
       amount: expense.amount,
       description: expense.description
     }))
   }
 
+  // Generate AI challenges
   const generateChallenges = async () => {
-    setLoading(true)
-    try {
-      const newChallenges = await challengeAgent(finalProfile)
-      setChallenges(newChallenges)
-      saveChallenges(newChallenges) // Persist the generated challenges
-    } catch (error) {
-      console.error('Failed to generate challenges:', error)
-      // Fallback to some default challenges based on expenses
-      const defaultChallenges = getDefaultChallenges()
-      setChallenges(defaultChallenges)
-      saveChallenges(defaultChallenges) // Persist the default challenges too
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const getDefaultChallenges = (): Challenge[] => {
-    const weeklyTotal = lastWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-    const topCategory = getTopSpendingCategory()
+    setGeneratingChallenges(true)
     
-    const baseChallenges: Challenge[] = [
-      {
-        id: "save_quest_1",
-        title: "🎮 THE PENNY COLLECTOR",
-        description: `Save ₹${Math.max(50, Math.round(weeklyTotal * 0.1))} this week by finding deals or skipping purchases`,
-        category: "SAVING_QUEST",
-        difficulty: "NOOB",
-        xpReward: 50,
-        deadline: "7 days",
-        emoji: "💰",
-        completed: false
-      },
-      {
-        id: "budget_battle_1",
-        title: "🎯 EXPENSE TRACKER PRO",
-        description: "Continue tracking your expenses - you're doing great! Add 5 more expenses this week.",
-        category: "BUDGET_BATTLE",
-        difficulty: "PLAYER",
-        xpReward: 75,
-        deadline: "7 days",
-        emoji: "📊",
-        completed: false
+    try {
+      // Fetch expenses and get recent ones
+      const allExpenses = await fetchExpenses()
+      
+      // Get weekly expenses directly from allExpenses instead of using state
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - 7)
+      
+      const weeklyExpenses = allExpenses.filter((expense: Expense) => {
+        const expenseDate = new Date(expense.date)
+        return expenseDate >= cutoffDate
+      })
+      
+      const simpleExpenses = convertToSimpleExpenses(weeklyExpenses)
+      
+      const profileData = { 
+        ...defaultProfile, 
+        weeklyExpenses: simpleExpenses 
       }
-    ]
+      
+      const generatedChallenges = await challengeAgent(profileData)
+      
+      if (generatedChallenges && generatedChallenges.length > 0) {
+        // The agent returns a deadline like "in 7 days". We calculate the final date here.
+        const mappedChallenges: Omit<Challenge, 'id' | 'createdAt'>[] = generatedChallenges.map((challenge: AgentChallenge) => {
+          const deadlineDate = new Date();
+          const daysToAdd = parseInt(challenge.deadline.split(' ')[1]) || 7;
+          deadlineDate.setDate(deadlineDate.getDate() + daysToAdd);
 
-    if (topCategory) {
-      baseChallenges.push({
-        id: "category_challenge",
-        title: `🏹 ${topCategory.toUpperCase()} MASTER`,
-        description: `Reduce your ${topCategory.toLowerCase()} spending by 15% this week. Your current weekly average is ₹${Math.round(weeklyTotal * 0.3)}.`,
-        category: "SAVING_QUEST",
-        difficulty: "PLAYER",
-        xpReward: 100,
-        deadline: "7 days",
-        emoji: "🎯",
-        completed: false
-      })
+          return {
+            title: challenge.title,
+            description: challenge.description,
+            category: challenge.category ?? 'saving',
+            difficulty: mapDifficulty(challenge.difficulty),
+            xpReward: challenge.xpReward,
+            deadline: deadlineDate.toISOString(),
+            emoji: challenge.emoji,
+            completed: false
+          }
+        })
+        
+        // Add challenges to backend
+        await addMultipleChallenges(mappedChallenges)
+        console.log('✅ Successfully generated and added', generatedChallenges.length, 'personalized challenges')
+      } else {
+        console.warn('⚠️ No challenges generated by agent')
+      }
+    } catch (error) {
+      console.error('❌ Error generating challenges:', error)
+    } finally {
+      setGeneratingChallenges(false)
     }
+  }
 
-    if (finalProfile.mainPurpose === 'investing') {
-      baseChallenges.push({
-        id: "investment_mission_1",
-        title: "🚀 ROOKIE INVESTOR",
-        description: "Research 3 beginner-friendly stocks and write down what you learned about each one",
-        category: "INVESTMENT_MISSION",
-        difficulty: finalProfile.financeKnowledge === 'beginner' ? "NOOB" : "PLAYER",
-        xpReward: 125,
-        deadline: "7 days",
-        emoji: "📈",
-        completed: false
-      })
+  // Map agent difficulty to our type
+  const mapDifficulty = (difficulty: string): 'easy' | 'medium' | 'hard' => {
+    const difficultyMap: Record<string, 'easy' | 'medium' | 'hard'> = {
+      'GRASSHOPPER': 'easy',
+      'APPRENTICE': 'medium',
+      'MASTER': 'hard',
+      'easy': 'easy',
+      'medium': 'medium',
+      'hard': 'hard'
     }
-
-    return baseChallenges
+    return difficultyMap[difficulty] || 'medium'
   }
 
-  const getTopSpendingCategory = (): string | null => {
-    const categoryTotals = lastWeekExpenses.reduce((acc, expense) => {
-      acc[expense.category] = (acc[expense.category] || 0) + expense.amount
-      return acc
-    }, {} as Record<string, number>)
-
-    const entries = Object.entries(categoryTotals)
-    if (entries.length === 0) return null
-
-    return entries.reduce((top, [category, amount]) => 
-      amount > (categoryTotals[top] || 0) ? category : top
-    , entries[0][0])
+  // Handle challenge completion
+  const handleCompleteChallenge = async (challengeId: string) => {
+    try {
+      const oldLevel = levelInfo.currentLevel
+      await completeChallenge(challengeId)
+      // Refresh user data to get updated XP and level from global cache
+      await fixUserLevel()
+      
+      // Small delay to ensure state is updated, then check if user leveled up
+      setTimeout(() => {
+        if (levelInfo.currentLevel > oldLevel) {
+          setShowLevelUpModal(true)
+        }
+      }, 500)
+    } catch (error) {
+      console.error('Error completing challenge:', error)
+    }
   }
 
-  const completeChallenge = (challengeId: string) => {
-    const updatedChallenges = challenges.map(challenge => 
-      challenge.id === challengeId 
-        ? { ...challenge, completed: true }
-        : challenge
-    )
-    setChallenges(updatedChallenges)
-    saveChallenges(updatedChallenges) // Persist the completion
+  // Clear all challenges
+  const handleClearAllChallenges = async () => {
+    try {
+      await deleteAllChallenges()
+    } catch (error) {
+      console.error('Error clearing challenges:', error)
+    }
   }
 
-  const removeCompletedChallenge = (challengeId: string) => {
-    const updatedChallenges = challenges.filter(challenge => challenge.id !== challengeId)
-    setChallenges(updatedChallenges)
-    saveChallenges(updatedChallenges) // Persist the removal
+  // Utility functions
+  const getDifficultyColor = (difficulty: string) => {
+    const colors: Record<string, string> = {
+      easy: 'text-green-500',
+      medium: 'text-yellow-500',
+      hard: 'text-red-500'
+    }
+    return colors[difficulty.toLowerCase()] || 'text-gray-500'
   }
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'SAVING_QUEST': return 'bg-green-500'
-      case 'INVESTMENT_MISSION': return 'bg-blue-500'
-      case 'BUDGET_BATTLE': return 'bg-purple-500'
-      case 'KNOWLEDGE_RAID': return 'bg-orange-500'
-      default: return 'bg-gray-500'
+    const colors: Record<string, string> = {
+      saving: 'bg-green-500',
+      investing: 'bg-yellow-500',
+      budgeting: 'bg-blue-500',
+      learning: 'bg-purple-500',
+      default: 'bg-gray-500'
     }
+    return colors[category.toLowerCase()] || colors.default
   }
 
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'NOOB': return 'text-green-600'
-      case 'PLAYER': return 'text-yellow-600'
-      case 'PRO': return 'text-red-600'
-      default: return 'text-gray-600'
-    }
+  // Format challenge deadline
+  const formatDeadline = (deadline: string) => {
+    const end = new Date(deadline)
+    const now = new Date()
+    if (now > end) return 'Expired'
+    const diffTime = end.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    if (diffDays <= 0) return 'Ends today'
+    if (diffDays === 1) return 'Ends tomorrow'
+    return `${diffDays} days left`
   }
-
-  const totalLastWeekExpenses = lastWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className={`font-bold text-[#001F3F] mb-2 tracking-wider ${
-          isMobile ? 'text-2xl' : 'text-3xl'
-        }`}>
-          🏆 GAMIFIED CHALLENGES
-        </h2>
-        <p className={`text-[#001F3F] opacity-70 ${
-          isMobile ? 'text-sm' : ''
-        }`}>
-          Complete financial challenges to level up your money skills!
-        </p>
-      </div>
-
-      {/* Expense Summary from Last Week */}
-      <div className={`bg-white/60 border-4 border-[#007FFF] ${
-        isMobile ? 'p-4' : 'p-6'
-      }`} style={{ borderRadius: '0px' }}>
-        <h3 className={`font-bold text-[#001F3F] mb-4 tracking-wide flex items-center space-x-2 ${
-          isMobile ? 'text-lg' : 'text-xl'
-        }`}>
-          <Calendar className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
-          <span>📊 LAST WEEK ANALYSIS</span>
-        </h3>
+      {/* Header with User Level Info */}
+      <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'justify-between items-center'}`}>
+        <div>
+          <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white mb-2`}>
+            🎮 GAMIFIED CHALLENGES
+          </h2>
+          <p className="text-gray-400">Complete challenges to earn XP and level up!</p>
+        </div>
         
-        {loadingExpenses ? (
-          <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-            <div className={`animate-spin border-4 border-[#007FFF] border-t-transparent rounded-full mx-auto mb-4 ${
-              isMobile ? 'w-6 h-6' : 'w-8 h-8'
-            }`}></div>
-            <p className={`text-[#001F3F] font-bold ${
-              isMobile ? 'text-sm' : ''
-            }`}>LOADING EXPENSES...</p>
-          </div>
-        ) : lastWeekExpenses.length > 0 ? (
-          <div className={`grid gap-4 ${
-            isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'
-          }`}>
-            <div className={`bg-blue-50/50 border-2 border-[#007FFF]/30 text-center ${
-              isMobile ? 'p-3' : 'p-4'
-            }`}>
-              <p className="text-sm text-[#001F3F] opacity-70 font-bold">TOTAL SPENT</p>
-              <p className={`font-bold text-[#001F3F] ${
-                isMobile ? 'text-xl' : 'text-2xl'
-              }`}>₹{totalLastWeekExpenses.toFixed(2)}</p>
+        {user && (
+          <div className="bg-gray-800 rounded-lg p-4 min-w-[280px]">
+            <div className="flex items-center justify-between mb-2">
+              <span className={`font-bold text-white`}>
+                Level {levelInfo.currentLevel} - {getLevelName(levelInfo.currentLevel)}
+              </span>
+              <span className="text-yellow-400 flex items-center">
+                <Zap className="w-4 h-4 mr-1" />
+                {user.earnedXp} XP
+              </span>
             </div>
-            <div className={`bg-blue-50/50 border-2 border-[#007FFF]/30 text-center ${
-              isMobile ? 'p-3' : 'p-4'
-            }`}>
-              <p className="text-sm text-[#001F3F] opacity-70 font-bold">TRANSACTIONS</p>
-              <p className={`font-bold text-[#001F3F] ${
-                isMobile ? 'text-xl' : 'text-2xl'
-              }`}>{lastWeekExpenses.length}</p>
+            
+            <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${levelInfo.progressPercentage}%` }}
+              />
             </div>
-            <div className={`bg-blue-50/50 border-2 border-[#007FFF]/30 text-center ${
-              isMobile ? 'p-3' : 'p-4'
-            }`}>
-              <p className="text-sm text-[#001F3F] opacity-70 font-bold">TOP CATEGORY</p>
-              <p className={`font-bold text-[#001F3F] ${
-                isMobile ? 'text-base' : 'text-lg'
-              }`}>{getTopSpendingCategory() || 'N/A'}</p>
-            </div>
-          </div>
-        ) : (
-          <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-            <p className={`text-[#001F3F] opacity-70 mb-4 ${
-              isMobile ? 'text-sm' : ''
-            }`}>
-              No expenses found for the last week. Add some expenses in the Budget Tracker to generate personalized challenges!
-            </p>
-            <div className={`bg-yellow-100 border-2 border-yellow-400 rounded-none ${
-              isMobile ? 'p-3' : 'p-4'
-            }`}>
-              <p className={`text-yellow-800 font-bold ${
-                isMobile ? 'text-sm' : ''
-              }`}>
-                💡 Tip: Go to Budget Tracker → Add your weekly expenses → Come back here to generate challenges!
-              </p>
+            
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>{levelInfo.xpProgress} / {levelInfo.xpForNextLevel - levelInfo.xpForCurrentLevel} XP</span>
+              <span>{Math.round(levelInfo.progressPercentage)}% to next level</span>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Generate Challenges Button */}
-        <div className={`text-center mt-6 space-y-3`}>
-          <div className={`flex justify-center ${
-            isMobile ? 'flex-col space-y-3' : 'space-x-4'
-          }`}>
-            <button
-              onClick={generateChallenges}
-              disabled={loading || loadingExpenses}
-              className={`bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all font-bold tracking-wider disabled:opacity-50 flex items-center justify-center space-x-2 ${
-                isMobile ? 'w-full px-6 py-3' : 'px-8 py-3'
-              }`}
-              style={{ borderRadius: '0px' }}
-            >
-              <RefreshCw className={`${(loading || loadingExpenses) ? 'animate-spin' : ''} ${
-                isMobile ? 'w-4 h-4' : 'w-5 h-5'
-              }`} />
-              <span className={isMobile ? 'text-sm' : ''}>
-                {loadingExpenses ? '📊 LOADING DATA...' : loading ? '🎮 GENERATING...' : '🎮 GENERATE CHALLENGES'}
-              </span>
-            </button>
-            
-            <button
-              onClick={() => loadExpenses(true)}
-              disabled={loadingExpenses}
-              className={`bg-gray-600 text-white border-2 border-gray-700 hover:bg-gray-700 transition-all font-bold tracking-wider disabled:opacity-50 flex items-center justify-center space-x-2 ${
-                isMobile ? 'w-full px-4 py-3' : 'px-4 py-3'
-              }`}
-              style={{ borderRadius: '0px' }}
-              title="Refresh expense data from server"
-            >
-              <RefreshCw className={`${loadingExpenses ? 'animate-spin' : ''} ${
-                isMobile ? 'w-4 h-4' : 'w-4 h-4'
-              }`} />
-              <span className={isMobile ? 'text-sm' : ''}>REFRESH DATA</span>
-            </button>
-          </div>
-          
-          {!loadingExpenses && (
-            <div className="text-xs text-[#001F3F] opacity-60">
-              {isCacheValid() ? (
-                <span>📋 Using cached data (refreshes every 5 minutes)</span>
-              ) : (
-                <span>🔄 Data loaded from server</span>
-              )}
+      {/* Action Buttons */}
+      <div className={`flex ${isMobile ? 'flex-col space-y-2' : 'space-x-4'}`}>
+        <button
+          onClick={generateChallenges}
+          disabled={generatingChallenges || challengesLoading || expensesLoading}
+          className={`${isMobile ? 'w-full' : 'flex-1'} bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-6 py-3 font-bold border-2 border-purple-400 transition-colors flex items-center justify-center`}
+        >
+          {generatingChallenges ? (
+            <>
+              <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+              GENERATING...
+            </>
+          ) : (
+            <>
+              <Plus className="w-5 h-5 mr-2" />
+              GENERATE AI CHALLENGES
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={refreshChallenges}
+          disabled={challengesLoading}
+          className={`${isMobile ? 'w-full' : ''} bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 font-bold border-2 border-blue-400 transition-colors flex items-center justify-center`}
+        >
+          <RefreshCw className={challengesLoading ? "w-5 h-5 mr-2 animate-spin" : "w-5 h-5 mr-2"} />
+          REFRESH
+        </button>
+        
+        {activeChallenges.length > 0 && (
+          <button
+            onClick={handleClearAllChallenges}
+            disabled={challengesLoading}
+            className={`${isMobile ? 'w-full' : ''} bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-6 py-3 font-bold border-2 border-red-400 transition-colors flex items-center justify-center`}
+          >
+            <Trash2 className="w-5 h-5 mr-2" />
+            CLEAR ALL
+          </button>
+        )}
+      </div>
+
+      {/* Stats Grid */}
+      <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-4 gap-4'}`}>
+        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">ACTIVE</p>
+              <p className="text-2xl font-bold text-white">{stats.activeChallenges}</p>
             </div>
-          )}
-          
-          {!loadingExpenses && lastWeekExpenses.length === 0 && (
-            <p className={`text-[#001F3F] opacity-70 ${
-              isMobile ? 'text-xs' : 'text-sm'
-            }`}>
-              Will generate basic challenges without expense data
-            </p>
-          )}
+            <Target className="w-8 h-8 text-blue-500" />
+          </div>
+        </div>
+        
+        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">COMPLETED</p>
+              <p className="text-2xl font-bold text-white">{stats.completedChallenges}</p>
+            </div>
+            <CheckCircle className="w-8 h-8 text-green-500" />
+          </div>
+        </div>
+        
+        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">TOTAL XP</p>
+              <p className="text-2xl font-bold text-white">{user?.earnedXp || 0}</p>
+            </div>
+            <Star className="w-8 h-8 text-yellow-500" />
+          </div>
+        </div>
+        
+        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">LEVEL</p>
+              <p className="text-2xl font-bold text-white">{levelInfo.currentLevel}</p>
+            </div>
+            <Trophy className="w-8 h-8 text-purple-500" />
+          </div>
         </div>
       </div>
 
-      {/* Challenges Display */}
-      {challenges.length > 0 && (
-        <div className={`bg-white/60 border-4 border-[#007FFF] ${
-          isMobile ? 'p-4' : 'p-6'
-        }`} style={{ borderRadius: '0px' }}>
-          <div className={`flex items-center justify-between mb-6 ${
-            isMobile ? 'flex-col space-y-3' : ''
-          }`}>
-            <h3 className={`font-bold text-[#001F3F] tracking-wide ${
-              isMobile ? 'text-xl text-center' : 'text-2xl'
-            }`}>
-              🎯 YOUR PERSONALIZED CHALLENGES
-            </h3>
-            <button
-              onClick={() => {
-                setChallenges([])
-                clearSavedChallenges()
-              }}
-              className={`bg-red-500 text-white border-2 border-red-600 hover:bg-red-600 transition-colors font-bold ${
-                isMobile ? 'w-full px-4 py-2 text-sm' : 'px-4 py-2 text-sm'
-              }`}
-              style={{ borderRadius: '0px' }}
-              title="Clear all challenges and start fresh"
-            >
-              CLEAR ALL
-            </button>
+      {/* Challenges List */}
+      <div className="space-y-4">
+        <h3 className="text-xl font-bold text-white">Active Challenges</h3>
+        
+        {challengesLoading && (
+          <div className="flex justify-center py-8">
+            <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
           </div>
-          
-          {getChallengeGenerationTime() && (
-            <div className="text-center mb-4">
-              <p className="text-xs text-[#001F3F] opacity-60">
-                Generated: {getChallengeGenerationTime()}
-              </p>
-            </div>
-          )}
-          
-          <div className="grid gap-4">
-            {challenges.map((challenge) => (
-              <div
-                key={challenge.id}
-                className={`bg-white/80 border-4 transition-all hover:shadow-lg ${
-                  challenge.completed ? 'border-green-500 bg-green-50/50' : 'border-[#007FFF]'
-                } ${isMobile ? 'p-4' : 'p-6'}`}
-                style={{ borderRadius: '0px' }}
-              >
-                <div className={`flex ${
-                  isMobile ? 'flex-col space-y-4' : 'items-start justify-between'
-                }`}>
-                  <div className="flex-1">
-                    <div className={`flex items-center mb-3 ${
-                      isMobile ? 'flex-col text-center space-y-2' : 'space-x-3'
-                    }`}>
-                      <span className={`${isMobile ? 'text-3xl' : 'text-2xl'}`}>{challenge.emoji}</span>
-                      <div className={isMobile ? 'text-center' : ''}>
-                        <h4 className={`font-bold text-[#001F3F] tracking-wide ${
-                          isMobile ? 'text-base' : 'text-lg'
-                        }`}>
-                          {challenge.title}
-                        </h4>
-                        <div className={`flex items-center text-sm ${
-                          isMobile ? 'flex-col space-y-2 mt-2' : 'space-x-4'
-                        }`}>
-                          <span className={`inline-block px-2 py-1 ${getCategoryColor(challenge.category)} text-white font-bold text-xs`}>
-                            {challenge.category.replace('_', ' ')}
-                          </span>
-                          <span className={`font-bold ${getDifficultyColor(challenge.difficulty)} text-xs`}>
-                            {challenge.difficulty}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <p className={`text-[#001F3F] mb-4 leading-relaxed ${
-                      isMobile ? 'text-sm text-center' : ''
-                    }`}>
-                      {challenge.description}
-                    </p>
-                    
-                    <div className={`flex items-center text-sm text-[#001F3F] opacity-70 ${
-                      isMobile ? 'justify-center space-x-4' : 'space-x-6'
-                    }`}>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4" />
-                        <span>{challenge.xpReward} XP</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{challenge.deadline}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className={`flex ${
-                    isMobile ? 'w-full' : 'flex-col'
-                  } space-y-2`}>
-                    {!challenge.completed ? (
-                      <button
-                        onClick={() => completeChallenge(challenge.id)}
-                        className={`bg-green-500 text-white border-2 border-green-600 hover:bg-green-600 transition-colors font-bold flex items-center justify-center space-x-2 ${
-                          isMobile ? 'w-full px-4 py-3' : 'px-4 py-2'
-                        }`}
-                        style={{ borderRadius: '0px' }}
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        <span className={isMobile ? 'text-sm' : ''}>COMPLETE</span>
-                      </button>
-                    ) : (
-                      <div className={`space-y-2 ${isMobile ? 'w-full' : ''}`}>
-                        <div className={`bg-green-500 text-white border-2 border-green-600 font-bold text-center ${
-                          isMobile ? 'w-full px-4 py-3' : 'px-4 py-2'
-                        }`}>
-                          ✅ COMPLETED!
-                        </div>
-                        <button
-                          onClick={() => removeCompletedChallenge(challenge.id)}
-                          className={`bg-red-500 text-white border-2 border-red-600 hover:bg-red-600 transition-colors font-bold text-sm ${
-                            isMobile ? 'w-full px-4 py-2' : 'px-4 py-2'
-                          }`}
-                          style={{ borderRadius: '0px' }}
-                        >
-                          REMOVE
-                        </button>
-                      </div>
-                    )}
+        )}
+        
+        {challengesError && (
+          <div className="bg-red-900 border border-red-600 text-red-200 p-4 text-center">
+            Error: {challengesError}
+          </div>
+        )}
+        
+        {!challengesLoading && activeChallenges.length === 0 && (
+          <div className="text-center py-8">
+            <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+            <p className="text-gray-400 text-lg">No active challenges</p>
+            <p className="text-gray-500">Generate some challenges to get started!</p>
+          </div>
+        )}
+        
+        <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+          {activeChallenges.map((challenge) => (
+            <div key={challenge.id} className="bg-gray-800 border-2 border-gray-600 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{challenge.emoji}</span>
+                  <div>
+                    <h4 className="font-bold text-white text-lg">{challenge.title}</h4>
                   </div>
                 </div>
+                
+                <div className="text-right">
+                  <div className="flex items-center text-yellow-400 mb-1">
+                    <Star className="w-4 h-4 mr-1" />
+                    <span className="font-bold">{challenge.xpReward} XP</span>
+                  </div>
+                  <span className={`text-sm font-bold ${getDifficultyColor(challenge.difficulty)}`}>
+                    {challenge.difficulty.toUpperCase()}
+                  </span>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              
+              <p className="text-gray-300 mb-4">{challenge.description}</p>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center text-gray-400 text-sm">
+                  <Clock className="w-4 h-4 mr-1" />
+                  {formatDeadline(challenge.deadline)}
+                </div>
+                
+                <button
+                  onClick={() => handleCompleteChallenge(challenge.id)}
+                  disabled={challengesLoading}
+                  className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-4 py-2 font-bold border-2 border-green-400 transition-colors flex items-center"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  COMPLETE
+                </button>
+              </div>
 
-      {/* Empty State */}
-      {challenges.length === 0 && (
-        <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
-          <Trophy className={`text-[#007FFF] mx-auto mb-4 opacity-50 ${
-            isMobile ? 'w-12 h-12' : 'w-16 h-16'
-          }`} />
-          <p className={`text-[#001F3F] opacity-70 mb-4 ${
-            isMobile ? 'text-base' : 'text-lg'
-          }`}>
-            Ready to start your financial journey?
-          </p>
-          <p className={`text-[#001F3F] opacity-60 ${
-            isMobile ? 'text-sm' : ''
-          }`}>
-            Click "Generate Challenges" to get personalized tasks based on your spending patterns!
-          </p>
+              <div className="flex items-center space-x-2 mt-1">
+                <span className={`w-3 h-3 rounded-full ${getCategoryColor(challenge.category)}`}></span>
+                <span className="text-gray-400 text-sm capitalize">{challenge.category}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Level Up Modal */}
+      {showLevelUpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-800 border-2 border-yellow-400 p-8 max-w-md mx-4 text-center">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-yellow-400 mb-2">LEVEL UP!</h2>
+            <p className="text-white mb-2">Congratulations!</p>
+            <p className="text-gray-400 mb-6">
+              You are now Level {levelInfo.currentLevel} {getLevelName(levelInfo.currentLevel)}!
+            </p>
+            
+            <button
+              onClick={() => setShowLevelUpModal(false)}
+              className="w-full bg-yellow-600 hover:bg-yellow-700 text-black px-6 py-3 font-bold border-2 border-yellow-400"
+            >
+              AWESOME!
+            </button>
+          </div>
         </div>
       )}
     </div>

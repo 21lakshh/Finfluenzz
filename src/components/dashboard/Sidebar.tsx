@@ -9,8 +9,8 @@ import {
   User,
   X
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { logout as authLogout } from '../../utils/auth'
 import type { TabType } from '../../pages/Dashboard'
 
 interface SidebarProps {
@@ -62,11 +62,15 @@ const tabItems: TabItem[] = [
 ]
 
 export default function Sidebar({ activeTab, onTabChange, width, isMobile = false, onClose }: SidebarProps) {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, logout } = useAuth()
+  const navigate = useNavigate()
   
   // Handle logout with comprehensive cache clearing
   const handleLogout = () => {
-    authLogout() // This clears all cache and redirects
+    // AuthContext logout now handles all cache clearing
+    logout()
+    // Navigate to signin page
+    navigate('/signin')
   }
 
 

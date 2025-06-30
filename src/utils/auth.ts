@@ -16,21 +16,16 @@ export const logout = () => {
   
   cacheKeys.forEach(key => {
     localStorage.removeItem(key)
-    console.log(`Cleared cache: ${key}`)
   })
   
   // Clear any other Finfluenzz related data
   Object.keys(localStorage).forEach(key => {
     if (key.startsWith('finfluenzz') || key.startsWith('finflue')) {
       localStorage.removeItem(key)
-      console.log(`Cleared additional cache: ${key}`)
     }
   })
   
-  console.log('All cache cleared - user logged out')
-
-  // Redirect to login page
-  window.location.href = '/signin'
+  console.log('✅ All cache cleared - user logged out')
 }
 
 export const isAuthenticated = (): boolean => {

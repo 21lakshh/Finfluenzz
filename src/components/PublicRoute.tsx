@@ -25,9 +25,9 @@ export default function PublicRoute({ children }: PublicRouteProps) {
     )
   }
 
-  // Redirect to landing page if already authenticated
+  // Redirect to dashboard if already authenticated
   if (user) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   // Render public content if not authenticated

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import axios from 'axios'
+import { logout as clearAllCache } from '../utils/auth'
 
 // User interface matching the backend response
 export interface User {
@@ -164,8 +165,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Logout function
   const logout = (): void => {
-    localStorage.removeItem('Authorization')
-    clearUserCache()
+    // Use comprehensive cache clearing from utility
+    clearAllCache()
+    // Update local state
     setUser(null)
     setError(null)
   }

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react'
+import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, FileText, Loader2 } from 'lucide-react'
 import { useIsMobile } from '../../hooks/use-Mobile'
+import expenseSummarizerAgent from '../../Agents/expenseSummarizerAgent'
+import type { SummaryRequest } from '../../Agents/expenseSummarizerAgent'
 
 export interface ExpenseItem {
   id: string
@@ -30,6 +32,12 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
   const [isLoading, setIsLoading] = useState(true)
   const [isAddingExpense, setIsAddingExpense] = useState(false)
   const [error, setError] = useState<string>('')
+  
+  // Summary states
+  const [showSummary, setShowSummary] = useState(false)
+  const [summaryContent, setSummaryContent] = useState<string>('')
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryType, setSummaryType] = useState<'week' | 'month'>('week')
   
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [newExpense, setNewExpense] = useState<Omit<ExpenseItem, 'id'>>({
@@ -285,6 +293,51 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
 
   const weekChange = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 : 0
 
+  // Get expenses for a specific period
+  const getExpensesForPeriod = (period: 'week' | 'month'): ExpenseItem[] => {
+    const now = new Date()
+    const daysBack = period === 'week' ? 7 : 30
+    const cutoffDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000))
+    
+    return expenses.filter(expense => {
+      const expenseDate = expense.date ? new Date(expense.date) : new Date()
+      return expenseDate >= cutoffDate
+    })
+  }
+
+  // Generate expense summary
+  const generateSummary = async (period: 'week' | 'month') => {
+    setSummaryLoading(true)
+    setSummaryType(period)
+    setError('')
+    
+    try {
+      const periodExpenses = getExpensesForPeriod(period)
+      const periodLabel = period === 'week' ? 'Past Week' : 'Past Month'
+      
+      if (periodExpenses.length === 0) {
+        setSummaryContent(`## ${periodLabel} Summary 📊\n\nNo expenses found for the ${period === 'week' ? 'past week' : 'past month'}. Start tracking your expenses to get detailed insights!\n\n💡 **Tip**: Add some expenses using the form above to generate meaningful summaries.`)
+        setShowSummary(true)
+        return
+      }
+      
+      const summaryRequest: SummaryRequest = {
+        expenses: periodExpenses,
+        period,
+        periodLabel
+      }
+      
+      const summary = await expenseSummarizerAgent(summaryRequest)
+      setSummaryContent(summary)
+      setShowSummary(true)
+    } catch (error) {
+      console.error('Error generating summary:', error)
+      setError('Failed to generate expense summary. Please try again.')
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
+
   // Loading state
   if (isLoading) {
     return (
@@ -335,6 +388,95 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
           </button>
         </div>
       )}
+
+      {/* AI Summary Section */}
+      <div className={`bg-gradient-to-r from-purple-100 to-blue-100 border-4 border-purple-500 ${
+        isMobile ? 'p-4' : 'p-6'
+      }`} style={{ borderRadius: '0px' }}>
+        <div className={`flex items-center justify-between mb-4 ${
+          isMobile ? 'flex-col space-y-3' : ''
+        }`}>
+          <h3 className={`font-bold text-purple-800 tracking-wide flex items-center space-x-2 ${
+            isMobile ? 'text-lg text-center' : 'text-xl'
+          }`}>
+            <BarChart3 className={`text-purple-600 ${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+            <span>🤖 AI EXPENSE SUMMARY</span>
+          </h3>
+          
+          <div className={`flex space-x-2 ${
+            isMobile ? 'w-full' : ''
+          }`}>
+            <button
+              onClick={() => generateSummary('week')}
+              disabled={summaryLoading || expenses.length === 0}
+              className={`bg-purple-500 text-white border-2 border-purple-600 hover:bg-purple-600 transition-colors font-bold disabled:opacity-50 flex items-center space-x-2 ${
+                isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-2'
+              }`}
+              style={{ borderRadius: '0px' }}
+            >
+              {summaryLoading && summaryType === 'week' ? (
+                <Loader2 className={`animate-spin ${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+              ) : (
+                <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+              )}
+              <span>WEEK SUMMARY</span>
+            </button>
+            
+            <button
+              onClick={() => generateSummary('month')}
+              disabled={summaryLoading || expenses.length === 0}
+              className={`bg-blue-500 text-white border-2 border-blue-600 hover:bg-blue-600 transition-colors font-bold disabled:opacity-50 flex items-center space-x-2 ${
+                isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-2'
+              }`}
+              style={{ borderRadius: '0px' }}
+            >
+              {summaryLoading && summaryType === 'month' ? (
+                <Loader2 className={`animate-spin ${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+              ) : (
+                <FileText className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+              )}
+              <span>MONTH SUMMARY</span>
+            </button>
+          </div>
+        </div>
+        
+        {expenses.length === 0 && (
+          <div className="text-center py-4">
+            <p className={`text-purple-700 opacity-80 ${
+              isMobile ? 'text-sm' : ''
+            }`}>
+              Add some expenses to generate AI-powered summaries and insights! 🚀
+            </p>
+          </div>
+        )}
+        
+        {showSummary && summaryContent && (
+          <div className="mt-4">
+            <div className={`bg-white/80 border-2 border-purple-300 ${
+              isMobile ? 'p-3' : 'p-4'
+            }`} style={{ borderRadius: '0px' }}>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className={`font-bold text-purple-800 ${
+                  isMobile ? 'text-sm' : 'text-base'
+                }`}>
+                  📊 {summaryType === 'week' ? 'Weekly' : 'Monthly'} Analysis
+                </h4>
+                <button
+                  onClick={() => setShowSummary(false)}
+                  className="text-purple-600 hover:text-purple-800 transition-colors text-sm"
+                >
+                  ✕ Close
+                </button>
+              </div>
+              <div className={`prose prose-sm max-w-none text-gray-800 ${
+                isMobile ? 'text-xs' : 'text-sm'
+              }`}>
+                <div className="whitespace-pre-wrap">{summaryContent}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Stats Cards */}
       <div className={`grid gap-4 ${

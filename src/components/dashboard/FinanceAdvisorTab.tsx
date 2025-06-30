@@ -4,6 +4,7 @@ import financeAdvisorAgent from '../../Agents/financeAdvisorAgent'
 import ProfessionalStockChart from '../charts/ProfessionalStockChart'
 import { stockAPI } from '../../services/stockAPI'
 import { extractAssetSymbol } from '../../utils/symbolUtils'
+import { useIsMobile } from '../../hooks/use-Mobile'
 import type { ChatMessage, AnalysisResponse } from '../../Agents/financeAdvisorAgent'
 import type { AssetHistoricalData, AssetType } from '../../services/stockAPI'
 
@@ -14,14 +15,17 @@ interface ChatBubbleProps {
   chartData?: AssetHistoricalData[]
   symbol?: string
   assetType?: AssetType
+  isMobile?: boolean
 }
 
-function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }: ChatBubbleProps) {
+function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType, isMobile = false }: ChatBubbleProps) {
   if (isUser) {
     return (
       <div className="flex justify-end mb-4">
-        <div className="bg-[#007FFF] text-white p-4 max-w-lg border-2 border-[#001F3F]" style={{ borderRadius: '0px' }}>
-          <p className="font-mono text-sm">{message}</p>
+        <div className={`bg-[#007FFF] text-white border-2 border-[#001F3F] ${
+          isMobile ? 'p-3 max-w-xs' : 'p-4 max-w-lg'
+        }`} style={{ borderRadius: '0px' }}>
+          <p className={`font-mono ${isMobile ? 'text-xs' : 'text-sm'}`}>{message}</p>
         </div>
       </div>
     )
@@ -29,12 +33,18 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
 
   return (
     <div className="flex justify-start mb-4">
-      <div className="bg-white/90 border-4 border-[#007FFF] p-4 max-w-4xl" style={{ borderRadius: '0px' }}>
-        <div className="flex items-center space-x-2 mb-3">
-          <Brain className="w-5 h-5 text-[#007FFF]" />
-          <span className="font-bold text-[#001F3F] tracking-wide">FINANCE GURU</span>
+      <div className={`bg-white/90 border-4 border-[#007FFF] ${
+        isMobile ? 'p-3 max-w-full' : 'p-4 max-w-4xl'
+      }`} style={{ borderRadius: '0px' }}>
+        <div className={`flex items-center mb-3 ${
+          isMobile ? 'flex-wrap space-x-1 space-y-1' : 'space-x-2'
+        }`}>
+          <Brain className={`text-[#007FFF] ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+          <span className={`font-bold text-[#001F3F] tracking-wide ${
+            isMobile ? 'text-sm' : ''
+          }`}>FINANCE GURU</span>
           {symbol && assetType && (
-            <div className="flex items-center space-x-2 ml-2">
+            <div className={`flex items-center space-x-2 ${isMobile ? 'ml-0' : 'ml-2'}`}>
               {assetType === 'crypto' ? (
                 <Coins className="w-4 h-4 text-orange-500" />
               ) : (
@@ -46,7 +56,9 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
             </div>
           )}
           {analysis && (
-            <div className="flex items-center space-x-2 ml-4">
+            <div className={`flex items-center space-x-2 ${
+              isMobile ? 'ml-0 mt-1 w-full' : 'ml-4'
+            }`}>
               {symbol ? (
                 <>
                   <div className={`px-2 py-1 text-xs font-bold ${
@@ -76,7 +88,9 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
         </div>
         
         <div className="prose prose-sm max-w-none">
-          <p className="text-[#001F3F] leading-relaxed whitespace-pre-wrap">{message}</p>
+          <p className={`text-[#001F3F] leading-relaxed whitespace-pre-wrap ${
+            isMobile ? 'text-sm' : ''
+          }`}>{message}</p>
         </div>
 
         {/* Analysis Summary Cards - Only show for financial advice */}
@@ -84,28 +98,44 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
           <div className="mt-4">
             {symbol ? (
               // Asset-specific analysis (full details)
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+              <div className={`grid gap-2 ${
+                isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'
+              }`}>
+                <div className={`bg-blue-50 border-2 border-[#007FFF] text-center ${
+                  isMobile ? 'p-1' : 'p-2'
+                }`}>
                   <p className="text-xs text-[#001F3F] opacity-70 font-bold">RISK</p>
-                  <p className={`text-sm font-bold ${
+                  <p className={`font-bold ${
                     analysis.riskLevel === 'LOW' ? 'text-green-600' :
                     analysis.riskLevel === 'HIGH' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
+                  } ${isMobile ? 'text-xs' : 'text-sm'}`}>
                     {analysis.riskLevel}
                   </p>
                 </div>
-                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                <div className={`bg-blue-50 border-2 border-[#007FFF] text-center ${
+                  isMobile ? 'p-1' : 'p-2'
+                }`}>
                   <p className="text-xs text-[#001F3F] opacity-70 font-bold">HORIZON</p>
-                  <p className="text-sm font-bold text-[#001F3F]">{analysis.timeHorizon}</p>
+                  <p className={`font-bold text-[#001F3F] ${
+                    isMobile ? 'text-xs' : 'text-sm'
+                  }`}>{analysis.timeHorizon}</p>
                 </div>
-                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                <div className={`bg-blue-50 border-2 border-[#007FFF] text-center ${
+                  isMobile ? 'p-1' : 'p-2'
+                }`}>
                   <p className="text-xs text-[#001F3F] opacity-70 font-bold">CONFIDENCE</p>
-                  <p className="text-sm font-bold text-[#001F3F]">{analysis.confidence}%</p>
+                  <p className={`font-bold text-[#001F3F] ${
+                    isMobile ? 'text-xs' : 'text-sm'
+                  }`}>{analysis.confidence}%</p>
                 </div>
                 {analysis.priceTarget && (
-                  <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                  <div className={`bg-blue-50 border-2 border-[#007FFF] text-center ${
+                    isMobile ? 'p-1' : 'p-2'
+                  }`}>
                     <p className="text-xs text-[#001F3F] opacity-70 font-bold">TARGET</p>
-                    <p className="text-sm font-bold text-[#001F3F]">
+                    <p className={`font-bold text-[#001F3F] ${
+                      isMobile ? 'text-xs' : 'text-sm'
+                    }`}>
                       {assetType === 'crypto' ? '$' : '₹'}{analysis.priceTarget}
                     </p>
                   </div>
@@ -113,19 +143,27 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
               </div>
             ) : (
               // General financial advice (simplified)
-              <div className="grid grid-cols-2 gap-2 max-w-md">
-                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+              <div className={`grid gap-2 ${
+                isMobile ? 'grid-cols-1' : 'grid-cols-2'
+              } max-w-md`}>
+                <div className={`bg-blue-50 border-2 border-[#007FFF] text-center ${
+                  isMobile ? 'p-2' : 'p-2'
+                }`}>
                   <p className="text-xs text-[#001F3F] opacity-70 font-bold">RISK LEVEL</p>
-                  <p className={`text-sm font-bold ${
+                  <p className={`font-bold ${
                     analysis.riskLevel === 'LOW' ? 'text-green-600' :
                     analysis.riskLevel === 'HIGH' ? 'text-red-600' : 'text-yellow-600'
-                  }`}>
+                  } ${isMobile ? 'text-xs' : 'text-sm'}`}>
                     {analysis.riskLevel}
                   </p>
                 </div>
-                <div className="bg-blue-50 border-2 border-[#007FFF] p-2 text-center">
+                <div className={`bg-blue-50 border-2 border-[#007FFF] text-center ${
+                  isMobile ? 'p-2' : 'p-2'
+                }`}>
                   <p className="text-xs text-[#001F3F] opacity-70 font-bold">CONFIDENCE</p>
-                  <p className="text-sm font-bold text-[#001F3F]">{analysis.confidence}%</p>
+                  <p className={`font-bold text-[#001F3F] ${
+                    isMobile ? 'text-xs' : 'text-sm'
+                  }`}>{analysis.confidence}%</p>
                 </div>
               </div>
             )}
@@ -135,20 +173,24 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
         {/* Asset Chart */}
         {chartData && symbol && (
           <div className="mt-6">
-            <div className="flex items-center space-x-2 mb-3">
+            <div className={`flex items-center mb-3 ${
+              isMobile ? 'space-x-1' : 'space-x-2'
+            }`}>
               {assetType === 'crypto' ? (
-                <Coins className="w-5 h-5 text-orange-500" />
+                <Coins className={`text-orange-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               ) : (
-                <TrendingUp className="w-5 h-5 text-green-500" />
+                <TrendingUp className={`text-green-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               )}
-              <h3 className="text-lg font-bold text-[#001F3F]">
+              <h3 className={`font-bold text-[#001F3F] ${
+                isMobile ? 'text-sm' : 'text-lg'
+              }`}>
                 {symbol} {assetType === 'crypto' ? 'Price Chart' : 'Stock Chart'}
               </h3>
             </div>
             <ProfessionalStockChart 
               data={chartData} 
               symbol={symbol}
-              height={350}
+              height={isMobile ? 250 : 350}
               showVolume={false} // Hide volume for crypto since it's not always available
             />
           </div>
@@ -159,6 +201,7 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType }:
 }
 
 export default function FinanceAdvisorTab() {
+  const isMobile = useIsMobile()
   const [messages, setMessages] = useState<Array<{
     text: string
     isUser: boolean
@@ -257,16 +300,26 @@ export default function FinanceAdvisorTab() {
   ]
 
   return (
-    <div className="h-full flex flex-col max-w-6xl mx-auto">
+    <div className={`h-full flex flex-col ${isMobile ? 'max-w-full' : 'max-w-6xl mx-auto'}`}>
       {/* Header */}
-      <div className="bg-white/60 border-4 border-[#007FFF] p-4 mb-4" style={{ borderRadius: '0px' }}>
-        <div className="flex items-center space-x-3">
-          <MessageSquare className="w-8 h-8 text-[#007FFF]" />
+      <div className={`bg-white/60 border-4 border-[#007FFF] mb-4 ${
+        isMobile ? 'p-3' : 'p-4'
+      }`} style={{ borderRadius: '0px' }}>
+        <div className={`flex items-center ${
+          isMobile ? 'space-x-2' : 'space-x-3'
+        }`}>
+          <MessageSquare className={`text-[#007FFF] ${
+            isMobile ? 'w-6 h-6' : 'w-8 h-8'
+          }`} />
           <div>
-            <h2 className="text-2xl font-bold text-[#001F3F] tracking-wider">
+            <h2 className={`font-bold text-[#001F3F] tracking-wider ${
+              isMobile ? 'text-xl' : 'text-2xl'
+            }`}>
               🤖 FINANCE ADVISOR
             </h2>
-            <p className="text-[#001F3F] opacity-70">
+            <p className={`text-[#001F3F] opacity-70 ${
+              isMobile ? 'text-xs' : ''
+            }`}>
               Gen Z AI • Stocks & Crypto Analysis • Real-time data • No cap! 💯
             </p>
           </div>
@@ -274,26 +327,34 @@ export default function FinanceAdvisorTab() {
 
         {/* Enhanced Quick Actions */}
         <div className="mt-4 space-y-2">
-          <div className="flex items-center space-x-2 mb-2">
+          <div className={`flex items-center mb-2 ${
+            isMobile ? 'space-x-1' : 'space-x-2'
+          }`}>
             <TrendingUp className="w-4 h-4 text-green-500" />
-            <span className="text-sm font-bold text-[#001F3F]">STOCKS</span>
+            <span className={`font-bold text-[#001F3F] ${
+              isMobile ? 'text-xs' : 'text-sm'
+            }`}>STOCKS</span>
             <div className="flex-1 h-px bg-[#007FFF] opacity-30"></div>
             <Coins className="w-4 h-4 text-orange-500" />
-            <span className="text-sm font-bold text-[#001F3F]">CRYPTO</span>
+            <span className={`font-bold text-[#001F3F] ${
+              isMobile ? 'text-xs' : 'text-sm'
+            }`}>CRYPTO</span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex flex-wrap gap-2 ${
+            isMobile ? 'gap-1' : ''
+          }`}>
             {quickActions.map((action, index) => (
               <button
                 key={index}
                 onClick={() => setInputValue(action.message)}
-                className={`px-3 py-1 border-2 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-colors text-sm font-bold ${
+                className={`border-2 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-colors font-bold ${
                   action.type === 'crypto' 
                     ? 'bg-orange-50 text-orange-700 hover:bg-orange-500' 
                     : 'bg-green-50 text-green-700 hover:bg-green-500'
-                }`}
+                } ${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-1 text-sm'}`}
                 style={{ borderRadius: '0px' }}
               >
-                {action.label}
+                {isMobile ? action.label.split(' ')[0] : action.label}
               </button>
             ))}
           </div>
@@ -301,7 +362,9 @@ export default function FinanceAdvisorTab() {
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 bg-white/40 border-4 border-[#007FFF] p-4 overflow-y-auto" style={{ borderRadius: '0px' }}>
+      <div className={`flex-1 bg-white/40 border-4 border-[#007FFF] overflow-y-auto ${
+        isMobile ? 'p-2' : 'p-4'
+      }`} style={{ borderRadius: '0px' }}>
         <div className="space-y-4">
           {messages.map((message, index) => (
             <ChatBubble 
@@ -312,16 +375,27 @@ export default function FinanceAdvisorTab() {
               chartData={message.chartData}
               symbol={message.symbol}
               assetType={message.assetType}
+              isMobile={isMobile}
             />
           ))}
           
           {isLoading && (
             <div className="flex justify-start mb-4">
-              <div className="bg-white/80 border-4 border-[#007FFF] p-4" style={{ borderRadius: '0px' }}>
-                <div className="flex items-center space-x-2">
-                  <Brain className="w-5 h-5 text-[#007FFF] animate-pulse" />
-                  <span className="font-bold text-[#001F3F]">FINANCE GURU</span>
-                  <span className="text-[#001F3F] opacity-70">is analyzing...</span>
+              <div className={`bg-white/80 border-4 border-[#007FFF] ${
+                isMobile ? 'p-3' : 'p-4'
+              }`} style={{ borderRadius: '0px' }}>
+                <div className={`flex items-center ${
+                  isMobile ? 'space-x-1' : 'space-x-2'
+                }`}>
+                  <Brain className={`text-[#007FFF] animate-pulse ${
+                    isMobile ? 'w-4 h-4' : 'w-5 h-5'
+                  }`} />
+                  <span className={`font-bold text-[#001F3F] ${
+                    isMobile ? 'text-sm' : ''
+                  }`}>FINANCE GURU</span>
+                  <span className={`text-[#001F3F] opacity-70 ${
+                    isMobile ? 'text-xs' : ''
+                  }`}>is analyzing...</span>
                 </div>
                 <div className="flex space-x-2 mt-2">
                   <div className="w-2 h-2 bg-[#007FFF] animate-bounce"></div>
@@ -336,35 +410,47 @@ export default function FinanceAdvisorTab() {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white/60 border-4 border-[#007FFF] p-4 mt-4" style={{ borderRadius: '0px' }}>
-        <div className="flex space-x-3">
+      <div className={`bg-white/60 border-4 border-[#007FFF] mt-4 ${
+        isMobile ? 'p-3' : 'p-4'
+      }`} style={{ borderRadius: '0px' }}>
+        <div className={`flex ${
+          isMobile ? 'flex-col space-y-2' : 'space-x-3'
+        }`}>
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask me about any stock or crypto! Try: 'How is Tesla doing?' or 'BTC analysis'"
-            className="flex-1 p-3 border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none resize-none font-mono"
+            className={`border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none resize-none font-mono ${
+              isMobile ? 'w-full p-2 text-sm' : 'flex-1 p-3'
+            }`}
             style={{ borderRadius: '0px' }}
-            rows={2}
+            rows={isMobile ? 3 : 2}
             disabled={isLoading}
           />
           <button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
-            className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-6 py-3 border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+              isMobile ? 'w-full px-4 py-3' : 'px-6 py-3'
+            }`}
             style={{ borderRadius: '0px' }}
           >
-            <Send className="w-5 h-5" />
+            <Send className={`${isMobile ? 'w-4 h-4 mx-auto' : 'w-5 h-5'}`} />
           </button>
         </div>
         
         {/* Help Text & Disclaimer */}
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center space-x-2 text-xs text-[#007FFF] font-medium">
+        <div className={`space-y-2 ${isMobile ? 'mt-2' : 'mt-3'}`}>
+          <div className={`flex items-center space-x-2 text-[#007FFF] font-medium ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
             <span>💡</span>
             <p>Pro tip: If I don't understand, try exact names like "TSLA", "BTC", "NVDA", "ETH" or "SOL"</p>
           </div>
-          <div className="flex items-center space-x-2 text-xs text-[#001F3F] opacity-60">
+          <div className={`flex items-center space-x-2 text-[#001F3F] opacity-60 ${
+            isMobile ? 'text-xs' : 'text-xs'
+          }`}>
             <AlertTriangle className="w-4 h-4" />
             <p>Not financial advice • DYOR • Stocks & crypto are risky AF • CoinGecko & stock APIs for data</p>
           </div>

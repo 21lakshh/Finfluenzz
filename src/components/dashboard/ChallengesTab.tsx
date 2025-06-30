@@ -3,6 +3,7 @@ import axios from 'axios'
 import { Trophy, CheckCircle, Star, Clock, Calendar, RefreshCw } from 'lucide-react'
 import challengeAgent from '../../Agents/challengeAgent'
 import type { UserProfile, ExpenseItem, Challenge } from '../../Agents/challengeAgent'
+import { useIsMobile } from '../../hooks/use-Mobile'
 
 interface ChallengesTabProps {
   userProfile?: Partial<UserProfile>
@@ -24,6 +25,7 @@ interface CachedChallenges {
 }
 
 export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
+  const isMobile = useIsMobile()
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [loading, setLoading] = useState(false)
   const [allExpenses, setAllExpenses] = useState<ExpenseItem[]>([])
@@ -239,8 +241,6 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
     }
   }
 
-
-
   const getDefaultChallenges = (): Challenge[] => {
     const weeklyTotal = lastWeekExpenses.reduce((sum, expense) => sum + expense.amount, 0)
     const topCategory = getTopSpendingCategory()
@@ -356,48 +356,80 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-[#001F3F] mb-2 tracking-wider">
+        <h2 className={`font-bold text-[#001F3F] mb-2 tracking-wider ${
+          isMobile ? 'text-2xl' : 'text-3xl'
+        }`}>
           🏆 GAMIFIED CHALLENGES
         </h2>
-        <p className="text-[#001F3F] opacity-70">
+        <p className={`text-[#001F3F] opacity-70 ${
+          isMobile ? 'text-sm' : ''
+        }`}>
           Complete financial challenges to level up your money skills!
         </p>
       </div>
 
       {/* Expense Summary from Last Week */}
-      <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
-        <h3 className="text-xl font-bold text-[#001F3F] mb-4 tracking-wide flex items-center space-x-2">
-          <Calendar className="w-6 h-6" />
+      <div className={`bg-white/60 border-4 border-[#007FFF] ${
+        isMobile ? 'p-4' : 'p-6'
+      }`} style={{ borderRadius: '0px' }}>
+        <h3 className={`font-bold text-[#001F3F] mb-4 tracking-wide flex items-center space-x-2 ${
+          isMobile ? 'text-lg' : 'text-xl'
+        }`}>
+          <Calendar className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
           <span>📊 LAST WEEK ANALYSIS</span>
         </h3>
         
         {loadingExpenses ? (
-          <div className="text-center py-8">
-            <div className="animate-spin w-8 h-8 border-4 border-[#007FFF] border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-[#001F3F] font-bold">LOADING EXPENSES...</p>
+          <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+            <div className={`animate-spin border-4 border-[#007FFF] border-t-transparent rounded-full mx-auto mb-4 ${
+              isMobile ? 'w-6 h-6' : 'w-8 h-8'
+            }`}></div>
+            <p className={`text-[#001F3F] font-bold ${
+              isMobile ? 'text-sm' : ''
+            }`}>LOADING EXPENSES...</p>
           </div>
         ) : lastWeekExpenses.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50/50 border-2 border-[#007FFF]/30 p-4 text-center">
+          <div className={`grid gap-4 ${
+            isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'
+          }`}>
+            <div className={`bg-blue-50/50 border-2 border-[#007FFF]/30 text-center ${
+              isMobile ? 'p-3' : 'p-4'
+            }`}>
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">TOTAL SPENT</p>
-              <p className="text-2xl font-bold text-[#001F3F]">₹{totalLastWeekExpenses.toFixed(2)}</p>
+              <p className={`font-bold text-[#001F3F] ${
+                isMobile ? 'text-xl' : 'text-2xl'
+              }`}>₹{totalLastWeekExpenses.toFixed(2)}</p>
             </div>
-            <div className="bg-blue-50/50 border-2 border-[#007FFF]/30 p-4 text-center">
+            <div className={`bg-blue-50/50 border-2 border-[#007FFF]/30 text-center ${
+              isMobile ? 'p-3' : 'p-4'
+            }`}>
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">TRANSACTIONS</p>
-              <p className="text-2xl font-bold text-[#001F3F]">{lastWeekExpenses.length}</p>
+              <p className={`font-bold text-[#001F3F] ${
+                isMobile ? 'text-xl' : 'text-2xl'
+              }`}>{lastWeekExpenses.length}</p>
             </div>
-            <div className="bg-blue-50/50 border-2 border-[#007FFF]/30 p-4 text-center">
+            <div className={`bg-blue-50/50 border-2 border-[#007FFF]/30 text-center ${
+              isMobile ? 'p-3' : 'p-4'
+            }`}>
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">TOP CATEGORY</p>
-              <p className="text-lg font-bold text-[#001F3F]">{getTopSpendingCategory() || 'N/A'}</p>
+              <p className={`font-bold text-[#001F3F] ${
+                isMobile ? 'text-base' : 'text-lg'
+              }`}>{getTopSpendingCategory() || 'N/A'}</p>
             </div>
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-[#001F3F] opacity-70 mb-4">
+          <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+            <p className={`text-[#001F3F] opacity-70 mb-4 ${
+              isMobile ? 'text-sm' : ''
+            }`}>
               No expenses found for the last week. Add some expenses in the Budget Tracker to generate personalized challenges!
             </p>
-            <div className="bg-yellow-100 border-2 border-yellow-400 p-4 rounded-none">
-              <p className="text-yellow-800 font-bold">
+            <div className={`bg-yellow-100 border-2 border-yellow-400 rounded-none ${
+              isMobile ? 'p-3' : 'p-4'
+            }`}>
+              <p className={`text-yellow-800 font-bold ${
+                isMobile ? 'text-sm' : ''
+              }`}>
                 💡 Tip: Go to Budget Tracker → Add your weekly expenses → Come back here to generate challenges!
               </p>
             </div>
@@ -405,16 +437,22 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
         )}
 
         {/* Generate Challenges Button */}
-        <div className="text-center mt-6 space-y-3">
-          <div className="flex justify-center space-x-4">
+        <div className={`text-center mt-6 space-y-3`}>
+          <div className={`flex justify-center ${
+            isMobile ? 'flex-col space-y-3' : 'space-x-4'
+          }`}>
             <button
               onClick={generateChallenges}
               disabled={loading || loadingExpenses}
-              className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-3 border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all font-bold tracking-wider disabled:opacity-50 flex items-center space-x-2"
+              className={`bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white border-2 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all font-bold tracking-wider disabled:opacity-50 flex items-center justify-center space-x-2 ${
+                isMobile ? 'w-full px-6 py-3' : 'px-8 py-3'
+              }`}
               style={{ borderRadius: '0px' }}
             >
-              <RefreshCw className={`w-5 h-5 ${(loading || loadingExpenses) ? 'animate-spin' : ''}`} />
-              <span>
+              <RefreshCw className={`${(loading || loadingExpenses) ? 'animate-spin' : ''} ${
+                isMobile ? 'w-4 h-4' : 'w-5 h-5'
+              }`} />
+              <span className={isMobile ? 'text-sm' : ''}>
                 {loadingExpenses ? '📊 LOADING DATA...' : loading ? '🎮 GENERATING...' : '🎮 GENERATE CHALLENGES'}
               </span>
             </button>
@@ -422,12 +460,16 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
             <button
               onClick={() => loadExpenses(true)}
               disabled={loadingExpenses}
-              className="bg-gray-600 text-white px-4 py-3 border-2 border-gray-700 hover:bg-gray-700 transition-all font-bold tracking-wider disabled:opacity-50 flex items-center space-x-2"
+              className={`bg-gray-600 text-white border-2 border-gray-700 hover:bg-gray-700 transition-all font-bold tracking-wider disabled:opacity-50 flex items-center justify-center space-x-2 ${
+                isMobile ? 'w-full px-4 py-3' : 'px-4 py-3'
+              }`}
               style={{ borderRadius: '0px' }}
               title="Refresh expense data from server"
             >
-              <RefreshCw className={`w-4 h-4 ${loadingExpenses ? 'animate-spin' : ''}`} />
-              <span>REFRESH DATA</span>
+              <RefreshCw className={`${loadingExpenses ? 'animate-spin' : ''} ${
+                isMobile ? 'w-4 h-4' : 'w-4 h-4'
+              }`} />
+              <span className={isMobile ? 'text-sm' : ''}>REFRESH DATA</span>
             </button>
           </div>
           
@@ -442,7 +484,9 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
           )}
           
           {!loadingExpenses && lastWeekExpenses.length === 0 && (
-            <p className="text-sm text-[#001F3F] opacity-70">
+            <p className={`text-[#001F3F] opacity-70 ${
+              isMobile ? 'text-xs' : 'text-sm'
+            }`}>
               Will generate basic challenges without expense data
             </p>
           )}
@@ -451,9 +495,15 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
 
       {/* Challenges Display */}
       {challenges.length > 0 && (
-        <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-[#001F3F] tracking-wide">
+        <div className={`bg-white/60 border-4 border-[#007FFF] ${
+          isMobile ? 'p-4' : 'p-6'
+        }`} style={{ borderRadius: '0px' }}>
+          <div className={`flex items-center justify-between mb-6 ${
+            isMobile ? 'flex-col space-y-3' : ''
+          }`}>
+            <h3 className={`font-bold text-[#001F3F] tracking-wide ${
+              isMobile ? 'text-xl text-center' : 'text-2xl'
+            }`}>
               🎯 YOUR PERSONALIZED CHALLENGES
             </h3>
             <button
@@ -461,7 +511,9 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
                 setChallenges([])
                 clearSavedChallenges()
               }}
-              className="bg-red-500 text-white px-4 py-2 border-2 border-red-600 hover:bg-red-600 transition-colors font-bold text-sm"
+              className={`bg-red-500 text-white border-2 border-red-600 hover:bg-red-600 transition-colors font-bold ${
+                isMobile ? 'w-full px-4 py-2 text-sm' : 'px-4 py-2 text-sm'
+              }`}
               style={{ borderRadius: '0px' }}
               title="Clear all challenges and start fresh"
             >
@@ -481,35 +533,47 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
             {challenges.map((challenge) => (
               <div
                 key={challenge.id}
-                className={`bg-white/80 border-4 p-6 transition-all hover:shadow-lg ${
+                className={`bg-white/80 border-4 transition-all hover:shadow-lg ${
                   challenge.completed ? 'border-green-500 bg-green-50/50' : 'border-[#007FFF]'
-                }`}
+                } ${isMobile ? 'p-4' : 'p-6'}`}
                 style={{ borderRadius: '0px' }}
               >
-                <div className="flex items-start justify-between">
+                <div className={`flex ${
+                  isMobile ? 'flex-col space-y-4' : 'items-start justify-between'
+                }`}>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <span className="text-2xl">{challenge.emoji}</span>
-                      <div>
-                        <h4 className="text-lg font-bold text-[#001F3F] tracking-wide">
+                    <div className={`flex items-center mb-3 ${
+                      isMobile ? 'flex-col text-center space-y-2' : 'space-x-3'
+                    }`}>
+                      <span className={`${isMobile ? 'text-3xl' : 'text-2xl'}`}>{challenge.emoji}</span>
+                      <div className={isMobile ? 'text-center' : ''}>
+                        <h4 className={`font-bold text-[#001F3F] tracking-wide ${
+                          isMobile ? 'text-base' : 'text-lg'
+                        }`}>
                           {challenge.title}
                         </h4>
-                        <div className="flex items-center space-x-4 text-sm">
-                          <span className={`inline-block px-2 py-1 ${getCategoryColor(challenge.category)} text-white font-bold`}>
+                        <div className={`flex items-center text-sm ${
+                          isMobile ? 'flex-col space-y-2 mt-2' : 'space-x-4'
+                        }`}>
+                          <span className={`inline-block px-2 py-1 ${getCategoryColor(challenge.category)} text-white font-bold text-xs`}>
                             {challenge.category.replace('_', ' ')}
                           </span>
-                          <span className={`font-bold ${getDifficultyColor(challenge.difficulty)}`}>
+                          <span className={`font-bold ${getDifficultyColor(challenge.difficulty)} text-xs`}>
                             {challenge.difficulty}
                           </span>
                         </div>
                       </div>
                     </div>
                     
-                    <p className="text-[#001F3F] mb-4 leading-relaxed">
+                    <p className={`text-[#001F3F] mb-4 leading-relaxed ${
+                      isMobile ? 'text-sm text-center' : ''
+                    }`}>
                       {challenge.description}
                     </p>
                     
-                    <div className="flex items-center space-x-6 text-sm text-[#001F3F] opacity-70">
+                    <div className={`flex items-center text-sm text-[#001F3F] opacity-70 ${
+                      isMobile ? 'justify-center space-x-4' : 'space-x-6'
+                    }`}>
                       <div className="flex items-center space-x-1">
                         <Star className="w-4 h-4" />
                         <span>{challenge.xpReward} XP</span>
@@ -521,24 +585,32 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
                     </div>
                   </div>
                   
-                  <div className="flex flex-col space-y-2">
+                  <div className={`flex ${
+                    isMobile ? 'w-full' : 'flex-col'
+                  } space-y-2`}>
                     {!challenge.completed ? (
                       <button
                         onClick={() => completeChallenge(challenge.id)}
-                        className="bg-green-500 text-white px-4 py-2 border-2 border-green-600 hover:bg-green-600 transition-colors font-bold flex items-center space-x-2"
+                        className={`bg-green-500 text-white border-2 border-green-600 hover:bg-green-600 transition-colors font-bold flex items-center justify-center space-x-2 ${
+                          isMobile ? 'w-full px-4 py-3' : 'px-4 py-2'
+                        }`}
                         style={{ borderRadius: '0px' }}
                       >
                         <CheckCircle className="w-4 h-4" />
-                        <span>COMPLETE</span>
+                        <span className={isMobile ? 'text-sm' : ''}>COMPLETE</span>
                       </button>
                     ) : (
-                      <div className="space-y-2">
-                        <div className="bg-green-500 text-white px-4 py-2 border-2 border-green-600 font-bold text-center">
+                      <div className={`space-y-2 ${isMobile ? 'w-full' : ''}`}>
+                        <div className={`bg-green-500 text-white border-2 border-green-600 font-bold text-center ${
+                          isMobile ? 'w-full px-4 py-3' : 'px-4 py-2'
+                        }`}>
                           ✅ COMPLETED!
                         </div>
                         <button
                           onClick={() => removeCompletedChallenge(challenge.id)}
-                          className="bg-red-500 text-white px-4 py-2 border-2 border-red-600 hover:bg-red-600 transition-colors font-bold text-sm"
+                          className={`bg-red-500 text-white border-2 border-red-600 hover:bg-red-600 transition-colors font-bold text-sm ${
+                            isMobile ? 'w-full px-4 py-2' : 'px-4 py-2'
+                          }`}
                           style={{ borderRadius: '0px' }}
                         >
                           REMOVE
@@ -555,12 +627,18 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
 
       {/* Empty State */}
       {challenges.length === 0 && (
-        <div className="text-center py-12">
-          <Trophy className="w-16 h-16 text-[#007FFF] mx-auto mb-4 opacity-50" />
-          <p className="text-[#001F3F] text-lg opacity-70 mb-4">
+        <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
+          <Trophy className={`text-[#007FFF] mx-auto mb-4 opacity-50 ${
+            isMobile ? 'w-12 h-12' : 'w-16 h-16'
+          }`} />
+          <p className={`text-[#001F3F] opacity-70 mb-4 ${
+            isMobile ? 'text-base' : 'text-lg'
+          }`}>
             Ready to start your financial journey?
           </p>
-          <p className="text-[#001F3F] opacity-60">
+          <p className={`text-[#001F3F] opacity-60 ${
+            isMobile ? 'text-sm' : ''
+          }`}>
             Click "Generate Challenges" to get personalized tasks based on your spending patterns!
           </p>
         </div>

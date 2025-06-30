@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react'
+import { useIsMobile } from '../../hooks/use-Mobile'
 
 export interface ExpenseItem {
   id: string
@@ -24,6 +25,7 @@ interface CachedExpenses {
 }
 
 export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) {
+  const isMobile = useIsMobile()
   const [expenses, setExpenses] = useState<ExpenseItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddingExpense, setIsAddingExpense] = useState(false)
@@ -305,20 +307,26 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-[#001F3F] mb-2 tracking-wider">
+        <h2 className={`font-bold text-[#001F3F] mb-2 tracking-wider ${
+          isMobile ? 'text-2xl' : 'text-3xl'
+        }`}>
           💰 SMART BUDGET TRACKER
         </h2>
-        <p className="text-[#001F3F] opacity-70">
+        <p className={`text-[#001F3F] opacity-70 ${
+          isMobile ? 'text-sm' : ''
+        }`}>
           Track your spending and optimize your financial habits!
         </p>
       </div>
 
-
-
       {/* Error Message */}
       {error && (
-        <div className="bg-red-100 border-4 border-red-500 p-4 text-center" style={{ borderRadius: '0px' }}>
-          <p className="text-red-700 font-bold">{error}</p>
+        <div className={`bg-red-100 border-4 border-red-500 text-center ${
+          isMobile ? 'p-3' : 'p-4'
+        }`} style={{ borderRadius: '0px' }}>
+          <p className={`text-red-700 font-bold ${
+            isMobile ? 'text-sm' : ''
+          }`}>{error}</p>
           <button 
             onClick={() => setError('')}
             className="mt-2 text-red-600 underline hover:text-red-800"
@@ -329,29 +337,45 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className={`grid gap-4 ${
+        isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'
+      }`}>
         {/* This Week Total */}
-        <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
+        <div className={`bg-white/60 border-4 border-[#007FFF] ${
+          isMobile ? 'p-4' : 'p-6'
+        }`} style={{ borderRadius: '0px' }}>
           <div className="flex items-center space-x-3">
-            <Calendar className="w-8 h-8 text-[#007FFF]" />
+            <Calendar className={`text-[#007FFF] ${
+              isMobile ? 'w-6 h-6' : 'w-8 h-8'
+            }`} />
             <div>
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">THIS WEEK</p>
-              <p className="text-2xl font-bold text-[#001F3F]">₹{thisWeekTotal.toFixed(2)}</p>
+              <p className={`font-bold text-[#001F3F] ${
+                isMobile ? 'text-xl' : 'text-2xl'
+              }`}>₹{thisWeekTotal.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
         {/* Weekly Change */}
-        <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
+        <div className={`bg-white/60 border-4 border-[#007FFF] ${
+          isMobile ? 'p-4' : 'p-6'
+        }`} style={{ borderRadius: '0px' }}>
           <div className="flex items-center space-x-3">
             {weekChange >= 0 ? (
-              <TrendingUp className="w-8 h-8 text-red-500" />
+              <TrendingUp className={`text-red-500 ${
+                isMobile ? 'w-6 h-6' : 'w-8 h-8'
+              }`} />
             ) : (
-              <TrendingDown className="w-8 h-8 text-green-500" />
+              <TrendingDown className={`text-green-500 ${
+                isMobile ? 'w-6 h-6' : 'w-8 h-8'
+              }`} />
             )}
             <div>
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">VS LAST WEEK</p>
-              <p className={`text-2xl font-bold ${weekChange >= 0 ? 'text-red-500' : 'text-green-500'}`}>
+              <p className={`font-bold ${weekChange >= 0 ? 'text-red-500' : 'text-green-500'} ${
+                isMobile ? 'text-xl' : 'text-2xl'
+              }`}>
                 {weekChange >= 0 ? '+' : ''}{weekChange.toFixed(1)}%
               </p>
             </div>
@@ -359,12 +383,18 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
         </div>
 
         {/* Total All Time */}
-        <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
+        <div className={`bg-white/60 border-4 border-[#007FFF] ${
+          isMobile ? 'p-4' : 'p-6'
+        }`} style={{ borderRadius: '0px' }}>
           <div className="flex items-center space-x-3">
-            <DollarSign className="w-8 h-8 text-[#007FFF]" />
+            <DollarSign className={`text-[#007FFF] ${
+              isMobile ? 'w-6 h-6' : 'w-8 h-8'
+            }`} />
             <div>
               <p className="text-sm text-[#001F3F] opacity-70 font-bold">TOTAL</p>
-              <p className="text-2xl font-bold text-[#001F3F]">₹{totalExpenses.toFixed(2)}</p>
+              <p className={`font-bold text-[#001F3F] ${
+                isMobile ? 'text-xl' : 'text-2xl'
+              }`}>₹{totalExpenses.toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -372,15 +402,25 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
 
       {/* Category Breakdown for This Week */}
       {Object.keys(categoryTotals).length > 0 && (
-        <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
-          <h3 className="text-xl font-bold text-[#001F3F] mb-4 tracking-wide">
+        <div className={`bg-white/60 border-4 border-[#007FFF] ${
+          isMobile ? 'p-4' : 'p-6'
+        }`} style={{ borderRadius: '0px' }}>
+          <h3 className={`font-bold text-[#001F3F] mb-4 tracking-wide ${
+            isMobile ? 'text-lg' : 'text-xl'
+          }`}>
             📊 THIS WEEK BY CATEGORY
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className={`grid gap-4 ${
+            isMobile ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-4'
+          }`}>
             {Object.entries(categoryTotals).map(([category, amount]) => (
-              <div key={category} className="bg-blue-50/50 border-2 border-[#007FFF]/30 p-3">
+              <div key={category} className={`bg-blue-50/50 border-2 border-[#007FFF]/30 ${
+                isMobile ? 'p-2' : 'p-3'
+              }`}>
                 <p className="text-sm text-[#001F3F] opacity-70 font-bold">{category.toUpperCase()}</p>
-                <p className="text-lg font-bold text-[#001F3F]">₹{amount.toFixed(2)}</p>
+                <p className={`font-bold text-[#001F3F] ${
+                  isMobile ? 'text-base' : 'text-lg'
+                }`}>₹{amount.toFixed(2)}</p>
                 <div className="w-full bg-[#007FFF]/20 h-2 mt-2">
                   <div 
                     className="bg-[#007FFF] h-full transition-all duration-300"
@@ -394,9 +434,13 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
       )}
 
       {/* Add Expense Section */}
-      <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
+      <div className={`bg-white/60 border-4 border-[#007FFF] ${
+        isMobile ? 'p-4' : 'p-6'
+      }`} style={{ borderRadius: '0px' }}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-[#001F3F] tracking-wide">
+          <h3 className={`font-bold text-[#001F3F] tracking-wide ${
+            isMobile ? 'text-lg' : 'text-xl'
+          }`}>
             ➕ ADD EXPENSE
           </h3>
           <button
@@ -409,12 +453,18 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
         </div>
 
         {showExpenseForm && (
-          <div className="space-y-4 p-4 bg-blue-50/50 border-2 border-[#007FFF]/30">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`space-y-4 bg-blue-50/50 border-2 border-[#007FFF]/30 ${
+            isMobile ? 'p-3' : 'p-4'
+          }`}>
+            <div className={`grid gap-4 ${
+              isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'
+            }`}>
               <select
                 value={newExpense.category}
                 onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
-                className="px-3 py-2 border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono"
+                className={`border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono ${
+                  isMobile ? 'px-2 py-2 text-sm' : 'px-3 py-2'
+                }`}
                 style={{ borderRadius: '0px' }}
               >
                 <option value="">Select Category</option>
@@ -429,7 +479,9 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
                 placeholder="Amount (₹)"
                 value={newExpense.amount || ''}
                 onChange={(e) => setNewExpense({...newExpense, amount: parseFloat(e.target.value) || 0})}
-                className="px-3 py-2 border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono"
+                className={`border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono ${
+                  isMobile ? 'px-2 py-2 text-sm' : 'px-3 py-2'
+                }`}
                 style={{ borderRadius: '0px' }}
               />
             </div>
@@ -439,23 +491,31 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
               placeholder="Description"
               value={newExpense.description}
               onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
-              className="w-full px-3 py-2 border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono"
+              className={`w-full border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono ${
+                isMobile ? 'px-2 py-2 text-sm' : 'px-3 py-2'
+              }`}
               style={{ borderRadius: '0px' }}
             />
             
-            <div className="flex space-x-4">
+            <div className={`flex ${
+              isMobile ? 'flex-col space-y-3' : 'space-x-4'
+            }`}>
               <input
                 type="date"
                 value={newExpense.date}
                 onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
-                className="flex-1 px-3 py-2 border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono"
+                className={`${isMobile ? 'w-full' : 'flex-1'} border-2 border-[#007FFF] text-[#001F3F] focus:border-[#001F3F] focus:outline-none font-mono ${
+                  isMobile ? 'px-2 py-2 text-sm' : 'px-3 py-2'
+                }`}
                 style={{ borderRadius: '0px' }}
               />
               
               <button
                 onClick={handleAddExpense}
                 disabled={isAddingExpense}
-                className="bg-green-500 text-white px-6 py-2 border-2 border-green-600 hover:bg-green-600 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`bg-green-500 text-white border-2 border-green-600 hover:bg-green-600 transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isMobile ? 'w-full px-4 py-2 text-sm' : 'px-6 py-2'
+                }`}
                 style={{ borderRadius: '0px' }}
               >
                 {isAddingExpense ? 'ADDING...' : 'ADD EXPENSE'}
@@ -467,12 +527,18 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
 
       {/* Recent Expenses List */}
       {expenses.length > 0 && (
-        <div className="bg-white/60 border-4 border-[#007FFF] p-6" style={{ borderRadius: '0px' }}>
-          <h3 className="text-xl font-bold text-[#001F3F] mb-4 tracking-wide">
+        <div className={`bg-white/60 border-4 border-[#007FFF] ${
+          isMobile ? 'p-4' : 'p-6'
+        }`} style={{ borderRadius: '0px' }}>
+          <h3 className={`font-bold text-[#001F3F] mb-4 tracking-wide ${
+            isMobile ? 'text-lg' : 'text-xl'
+          }`}>
             📋 RECENT EXPENSES
           </h3>
           
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className={`space-y-2 overflow-y-auto ${
+            isMobile ? 'max-h-48' : 'max-h-64'
+          }`}>
             {expenses
               .sort((a, b) => {
                 const dateA = a.date ? new Date(a.date).getTime() : new Date().getTime()
@@ -480,20 +546,34 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
                 return dateB - dateA
               })
               .map((expense) => (
-              <div key={expense.id} className="flex items-center justify-between bg-white/80 p-3 border-2 border-[#007FFF]/30">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3">
-                    <span className="inline-block px-2 py-1 bg-[#007FFF] text-white text-xs font-bold">
+              <div key={expense.id} className={`flex items-center justify-between bg-white/80 border-2 border-[#007FFF]/30 ${
+                isMobile ? 'p-2 flex-col space-y-2' : 'p-3'
+              }`}>
+                <div className={`${isMobile ? 'w-full text-center' : 'flex-1'}`}>
+                  <div className={`flex items-center ${
+                    isMobile ? 'flex-col space-y-2' : 'space-x-3'
+                  }`}>
+                    <span className={`inline-block bg-[#007FFF] text-white font-bold ${
+                      isMobile ? 'px-2 py-1 text-xs' : 'px-2 py-1 text-xs'
+                    }`}>
                       {expense.category}
                     </span>
-                    <span className="font-bold text-[#001F3F]">{expense.description}</span>
+                    <span className={`font-bold text-[#001F3F] ${
+                      isMobile ? 'text-sm' : ''
+                    }`}>{expense.description}</span>
                   </div>
-                  <p className="text-sm text-[#001F3F] opacity-70 mt-1">
+                  <p className={`text-[#001F3F] opacity-70 mt-1 ${
+                    isMobile ? 'text-xs' : 'text-sm'
+                  }`}>
                     {formatDate(expense.date)}
                   </p>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <span className="font-bold text-[#001F3F] text-lg">₹{expense.amount.toFixed(2)}</span>
+                <div className={`flex items-center ${
+                  isMobile ? 'justify-center space-x-4' : 'space-x-3'
+                }`}>
+                  <span className={`font-bold text-[#001F3F] ${
+                    isMobile ? 'text-base' : 'text-lg'
+                  }`}>₹{expense.amount.toFixed(2)}</span>
                   <button
                     onClick={() => handleRemoveExpense(expense.id)}
                     className="text-red-500 hover:text-red-700 transition-colors"
@@ -509,9 +589,15 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
 
       {/* Empty State */}
       {expenses.length === 0 && (
-        <div className="text-center py-12">
-          <PiggyBank className="w-16 h-16 text-[#007FFF] mx-auto mb-4 opacity-50" />
-          <p className="text-[#001F3F] text-lg opacity-70">
+        <div className={`text-center ${
+          isMobile ? 'py-8' : 'py-12'
+        }`}>
+          <PiggyBank className={`text-[#007FFF] mx-auto mb-4 opacity-50 ${
+            isMobile ? 'w-12 h-12' : 'w-16 h-16'
+          }`} />
+          <p className={`text-[#001F3F] opacity-70 ${
+            isMobile ? 'text-base' : 'text-lg'
+          }`}>
             Start tracking your expenses to get insights into your spending habits!
           </p>
         </div>

@@ -7,7 +7,8 @@ import {
   TrendingUp, 
   PiggyBank,
   LogOut,
-  User
+  User,
+  X
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import type { TabType } from '../../pages/Dashboard'
@@ -16,6 +17,8 @@ interface SidebarProps {
   activeTab: TabType
   onTabChange: (tab: TabType) => void
   width: number
+  isMobile?: boolean
+  onClose?: () => void
 }
 
 interface TabItem {
@@ -58,7 +61,7 @@ const tabItems: TabItem[] = [
   }
 ]
 
-export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps) {
+export default function Sidebar({ activeTab, onTabChange, width, isMobile = false, onClose }: SidebarProps) {
   const { user, isLoading, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -92,22 +95,41 @@ export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps)
 
   return (
     <div 
-      className="bg-blue-100/80 border-r-4 border-[#007FFF] backdrop-blur-sm relative z-10 flex flex-col"
+      className={`bg-blue-100/80 border-r-4 border-[#007FFF] backdrop-blur-sm relative z-10 flex flex-col ${
+        isMobile ? 'h-screen' : ''
+      }`}
       style={{ width: `${width}px` }}
     >
       {/* Header */}
       <div className="p-6 border-b-2 border-[#007FFF]/30">
-        <h1 className="text-2xl font-bold text-[#001F3F] tracking-wider">
-          FINFLUENZZ
-        </h1>
-        <div className="h-0.5 bg-gradient-to-r from-[#007FFF] to-[#001F3F] w-full mt-2"></div>
-        <p className="text-xs text-[#001F3F] opacity-70 mt-2 font-mono">
-          DASHBOARD v1.0
-        </p>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h1 className={`font-bold text-[#001F3F] tracking-wider ${
+              isMobile ? 'text-xl' : 'text-2xl'
+            }`}>
+              FINFLUENZZ
+            </h1>
+            <div className="h-0.5 bg-gradient-to-r from-[#007FFF] to-[#001F3F] w-full mt-2"></div>
+            <p className="text-xs text-[#001F3F] opacity-70 mt-2 font-mono">
+              DASHBOARD v1.0
+            </p>
+          </div>
+          
+          {/* Close button for mobile */}
+          {isMobile && onClose && (
+            <button
+              onClick={onClose}
+              className="ml-4 p-2 bg-red-500/80 hover:bg-red-600 text-white border-2 border-red-600 transition-colors"
+              style={{ borderRadius: '0px' }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 p-4 space-y-2">
+      <div className="flex-1 p-4 space-y-2 overflow-y-auto">
         <h2 className="text-sm font-bold text-[#001F3F] mb-4 tracking-wide opacity-80">
           NAVIGATION
         </h2>
@@ -128,12 +150,14 @@ export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps)
             <div className="flex items-center space-x-3">
               {item.icon}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold tracking-wide">
+                <div className={`font-bold tracking-wide ${
+                  isMobile ? 'text-xs' : 'text-sm'
+                }`}>
                   {item.label}
                 </div>
                 <div className={`text-xs opacity-70 ${
                   activeTab === item.id ? 'text-blue-100' : 'text-[#001F3F]'
-                }`}>
+                } ${isMobile ? 'text-xs' : ''}`}>
                   {item.description}
                 </div>
               </div>
@@ -158,7 +182,9 @@ export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps)
             <>
               <div className="flex items-center space-x-2 mb-1">
                 <User className="w-4 h-4 text-[#001F3F]" />
-                <div className="text-sm font-bold text-[#001F3F] tracking-wide">
+                <div className={`font-bold text-[#001F3F] tracking-wide ${
+                  isMobile ? 'text-xs' : 'text-sm'
+                }`}>
                   {user.username.toUpperCase()}
                 </div>
               </div>
@@ -191,12 +217,16 @@ export default function Sidebar({ activeTab, onTabChange, width }: SidebarProps)
         
         <button 
           onClick={handleLogout}
-          className="w-full bg-red-500/80 hover:bg-red-600 text-white border-2 border-red-600 p-2 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+          className={`w-full bg-red-500/80 hover:bg-red-600 text-white border-2 border-red-600 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 ${
+            isMobile ? 'p-2' : 'p-2'
+          }`}
           style={{ borderRadius: '0px' }}
           disabled={isLoading}
         >
           <LogOut className="w-4 h-4" />
-          <span className="text-sm font-bold tracking-wide">LOGOUT</span>
+          <span className={`font-bold tracking-wide ${
+            isMobile ? 'text-xs' : 'text-sm'
+          }`}>LOGOUT</span>
         </button>
       </div>
     </div>

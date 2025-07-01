@@ -15,9 +15,9 @@ const signupSchema = z.object({
   employmentType: z.string().min(3),
   financeKnowledge: z.string().min(3),
   earn: z.boolean(),
-  earnedXp: z.number().min(0),
-  completedChallenges: z.number().min(0),
-  currentLevel: z.number().min(1),
+  earnedXp: z.number().min(0).optional(),
+  completedChallenges: z.number().min(0).optional(),
+  currentLevel: z.number().min(1).max(20).optional(),
 })
 
 const signinSchema = z.object({

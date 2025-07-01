@@ -24,10 +24,10 @@ model User {
   employmentType   String
   financeKnowledge String
   earn             Boolean
-  createdAt        DateTime  @default(now())
-  earnedXp         Int       @default(0)
-  completedChallenges Int       @default(0)
-  currentLevel       Int       @default(1)
+  createdAt        DateTime?  @default(now())
+  earnedXp         Int?       @default(0)
+  completedChallenges Int?       @default(0)
+  currentLevel       Int?       @default(1)
   expenses         Expense[]
   challenges       Challenge[]
 }

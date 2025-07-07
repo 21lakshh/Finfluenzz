@@ -1,17 +1,15 @@
 import React, { useState, useRef } from 'react'
 import { Upload, FileText, Image, BarChart3, AlertTriangle } from 'lucide-react'
-import { useIsMobile } from '../../hooks/use-Mobile'
 import portfolioAnalysisAgent from '../../Agents/portfolioAnalysisAgent'
 import { processPortfolioFile, validatePortfolioContent } from '../../utils/fileProcessor'
-import type { PortfolioAnalysisResult, StockAnalysis } from '../../Agents/portfolioAnalysisAgent'
+import type { PortfolioAnalysisResult } from '../../Agents/portfolioAnalysisAgent'
 
 export default function InvestmentZone() {
-  const isMobile = useIsMobile()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [analysisResult, setAnalysisResult] = useState<PortfolioAnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [, setUploadedFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,17 +52,6 @@ export default function InvestmentZone() {
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
-    }
-  }
-
-  const getRecommendationColor = (recommendation: StockAnalysis['recommendation']) => {
-    switch (recommendation) {
-      case 'STRONG_BUY': return 'text-green-600 bg-green-100'
-      case 'BUY': return 'text-green-500 bg-green-50'
-      case 'HOLD': return 'text-yellow-600 bg-yellow-100'
-      case 'SELL': return 'text-red-500 bg-red-50'
-      case 'STRONG_SELL': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
     }
   }
 

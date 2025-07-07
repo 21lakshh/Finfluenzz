@@ -2,6 +2,7 @@ import type { TabType } from '../../pages/Dashboard'
 import ChallengesTab from './ChallengesTab'
 import BudgetTracker from './BudgetTracker'
 import FinanceAdvisorTab from './FinanceAdvisorTab'
+import InvestmentZone from './InvestmentZone'
 import { useUser } from '../../hooks/useUser'
 
 interface DashboardContentProps {
@@ -36,29 +37,7 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
         return <ChallengesTab />
       
       case 'investment':
-        return (
-          <div className="text-center">
-            <h2 className={`font-bold text-[#001F3F] mb-4 ${
-              isMobile ? 'text-2xl' : 'text-3xl'
-            }`}>
-              INVESTMENT ZONE
-            </h2>
-            <div className={`bg-white/60 border-4 border-[#007FFF] max-w-2xl mx-auto ${
-              isMobile ? 'p-4' : 'p-8'
-            }`} style={{ borderRadius: '0px' }}>
-              <p className={`text-[#001F3F] ${
-                isMobile ? 'text-base' : 'text-lg'
-              }`}>
-                📈 Investment Tools Coming Soon...
-              </p>
-              <p className={`text-[#001F3F] opacity-70 mt-4 ${
-                isMobile ? 'text-sm' : ''
-              }`}>
-                Track stocks, analyze market trends, and manage your portfolio
-              </p>
-            </div>
-          </div>
-        )
+        return <InvestmentZone />
       
       case 'budget-tracker':
         return <BudgetTracker />

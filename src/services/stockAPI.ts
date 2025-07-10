@@ -4,7 +4,7 @@ import { cryptoAPI } from './cryptoAPI';
 import { calculateTechnicalIndicators } from '../utils/technicalIndicators';
 
 /**
- * Stock API Service - Using Finnhub API for real-time stock data
+ * Stock API Service - Using Alpha Vantage API for real-time stock data
  * Crypto operations are handled by cryptoAPI service
  */
 
@@ -63,16 +63,16 @@ export type AssetHistoricalData = StockHistoricalData | CryptoHistoricalData;
 export type AssetType = 'stock' | 'crypto';
 
 class StockAPIService {
-  private finnhubKey: string;
+  private alphaVantageKey: string;
 
   constructor() {
-    // Use Finnhub API key from environment variables
-    this.finnhubKey = import.meta.env.VITE_FINNHUB_API_KEY || '';
+    // Use Alpha Vantage API key from environment variables
+    this.alphaVantageKey = import.meta.env.VITE_ALPHA_VANTAGE_API_KEY || '';
     
-    if (!this.finnhubKey) {
-      console.error('❌ Finnhub API key not found! Please add VITE_FINNHUB_API_KEY to your .env file');
+    if (!this.alphaVantageKey) {
+      console.error('❌ Alpha Vantage API key not found! Please add VITE_ALPHA_VANTAGE_API_KEY to your .env file');
     } else {
-      console.log('✅ Finnhub API initialized successfully');
+      console.log('✅ Alpha Vantage API initialized successfully');
     }
   }
 
@@ -118,32 +118,32 @@ class StockAPIService {
   // STOCK API METHODS  
   // =================
 
-  // Get stock quote using Finnhub
+  // Get stock quote using Alpha Vantage
   async getStockQuote(symbol: string): Promise<StockQuote> {
-    console.log(`🔍 Fetching stock quote for ${symbol} via Finnhub`);
+    console.log(`🔍 Fetching stock quote for ${symbol} via Alpha Vantage`);
     
-    if (!this.finnhubKey) {
-      throw new Error('Finnhub API key not configured');
+    if (!this.alphaVantageKey) {
+      throw new Error('Alpha Vantage API key not configured');
     }
 
     try {
-      return await this.getFinnhubQuote(symbol);
+      return await this.getAlphaVantageQuote(symbol);
     } catch (error) {
       console.error(`❌ Error fetching stock quote for ${symbol}:`, error);
       throw error;
     }
   }
 
-  // Get historical stock data using Finnhub
+  // Get historical stock data using Alpha Vantage
   async getHistoricalData(symbol: string, days: number = 30): Promise<StockHistoricalData[]> {
-    console.log(`🔍 Fetching historical data for ${symbol} - ${days} days via Finnhub`);
+    console.log(`🔍 Fetching historical data for ${symbol} - ${days} days via Alpha Vantage`);
     
-    if (!this.finnhubKey) {
-      throw new Error('Finnhub API key not configured');
-      }
+    if (!this.alphaVantageKey) {
+      throw new Error('Alpha Vantage API key not configured');
+    }
 
     try {
-      return await this.getFinnhubHistorical(symbol, days);
+      return await this.getAlphaVantageHistorical(symbol, days);
     } catch (error) {
       console.error(`❌ Error fetching historical data for ${symbol}:`, error);
       throw error;
@@ -164,84 +164,124 @@ class StockAPIService {
     }
   }
 
-  // ======================
-  // FINNHUB API METHODS
-  // ======================
+  // =========================
+  // ALPHA VANTAGE API METHODS
+  // =========================
 
-  // Get real-time quote from Finnhub
-  private async getFinnhubQuote(symbol: string): Promise<StockQuote> {
+  // Get real-time quote from Alpha Vantage
+  private async getAlphaVantageQuote(symbol: string): Promise<StockQuote> {
     try {
       const response = await axios.get(
-        `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${this.finnhubKey}`,
-        { timeout: 8000 }
-      );
-
-      const data = response.data;
-      
-      if (!data.c || data.c === 0) {
-        throw new Error(`No data found for symbol ${symbol} on Finnhub`);
-      }
-
-      return {
-        symbol: symbol.toUpperCase(),
-        price: data.c,
-        change: data.d || 0,
-        changePercent: data.dp || 0,
-        volume: 0, // Finnhub quote doesn't include volume in this endpoint
-        high52Week: data.h || undefined,
-        low52Week: data.l || undefined
-      };
-
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 429) {
-          throw new Error('Finnhub rate limit exceeded');
-        }
-        if (error.response?.status === 401) {
-          throw new Error('Invalid Finnhub API key');
-        }
-      }
-      console.error(`❌ Finnhub quote error for ${symbol}:`, error);
-      throw error;
-    }
-  }
-
-  // Get historical data from Finnhub
-  private async getFinnhubHistorical(symbol: string, days: number): Promise<StockHistoricalData[]> {
-    try {
-      const toDate = Math.floor(Date.now() / 1000);
-      const fromDate = toDate - (days * 24 * 60 * 60);
-
-      const response = await axios.get(
-        `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${fromDate}&to=${toDate}&token=${this.finnhubKey}`,
+        `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.alphaVantageKey}`,
         { timeout: 10000 }
       );
 
       const data = response.data;
       
-      if (data.s === 'no_data' || !data.c) {
-        throw new Error(`No historical data found for ${symbol} on Finnhub`);
+      if (data.Note && data.Note.includes('API call frequency')) {
+        throw new Error('Alpha Vantage rate limit exceeded');
       }
 
-      return data.c.map((close: number, index: number) => ({
-        date: new Date(data.t[index] * 1000).toISOString().split('T')[0],
-        open: data.o[index],
-        high: data.h[index],
-        low: data.l[index],
-        close,
-        volume: data.v[index] || 0
-      })).reverse(); // Most recent first
+      if (data['Error Message']) {
+        throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+      }
+
+      const quote = data['Global Quote'];
+      
+      if (!quote || !quote['05. price']) {
+        throw new Error(`No quote data found for symbol ${symbol} on Alpha Vantage`);
+      }
+
+      const price = parseFloat(quote['05. price']);
+      const change = parseFloat(quote['09. change']);
+      const changePercent = parseFloat(quote['10. change percent'].replace('%', ''));
+      const volume = parseInt(quote['06. volume']) || 0;
+      const high = parseFloat(quote['03. high']);
+      const low = parseFloat(quote['04. low']);
+
+      return {
+        symbol: symbol.toUpperCase(),
+        price,
+        change,
+        changePercent,
+        volume,
+        high52Week: high, // Alpha Vantage Global Quote doesn't provide 52-week data
+        low52Week: low
+      };
 
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 429) {
-          throw new Error('Finnhub rate limit exceeded');  
+          throw new Error('Alpha Vantage rate limit exceeded');
         }
         if (error.response?.status === 401) {
-          throw new Error('Invalid Finnhub API key');
+          throw new Error('Invalid Alpha Vantage API key');
+        }
+        if (error.response?.status === 403) {
+          throw new Error('Alpha Vantage API access denied - check your API key');
         }
       }
-      console.error(`❌ Finnhub historical data error for ${symbol}:`, error);
+      console.error(`❌ Alpha Vantage quote error for ${symbol}:`, error);
+      throw error;
+    }
+  }
+
+  // Get historical data from Alpha Vantage
+  private async getAlphaVantageHistorical(symbol: string, days: number): Promise<StockHistoricalData[]> {
+    try {
+      // Use TIME_SERIES_DAILY for historical data
+      const response = await axios.get(
+        `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${this.alphaVantageKey}`,
+        { timeout: 15000 }
+      );
+
+      const data = response.data;
+      
+      if (data.Note && data.Note.includes('API call frequency')) {
+        throw new Error('Alpha Vantage rate limit exceeded');
+      }
+
+      if (data['Error Message']) {
+        throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+      }
+
+      const timeSeries = data['Time Series (Daily)'];
+      
+      if (!timeSeries) {
+        throw new Error(`No historical data found for ${symbol} on Alpha Vantage`);
+      }
+
+      // Convert the time series data to our format
+      const historicalData: StockHistoricalData[] = [];
+      const dates = Object.keys(timeSeries).sort((a, b) => new Date(b).getTime() - new Date(a).getTime()).slice(0, days);
+
+      for (const date of dates) {
+        const dayData = timeSeries[date];
+        historicalData.push({
+          date,
+          open: parseFloat(dayData['1. open']),
+          high: parseFloat(dayData['2. high']),
+          low: parseFloat(dayData['3. low']),
+          close: parseFloat(dayData['4. close']),
+          volume: parseInt(dayData['5. volume']) || 0
+        });
+      }
+
+      return historicalData; // Already sorted with most recent first
+
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 429) {
+          throw new Error('Alpha Vantage rate limit exceeded');  
+        }
+        if (error.response?.status === 401) {
+          throw new Error('Invalid Alpha Vantage API key');
+        }
+        if (error.response?.status === 403) {
+          throw new Error('Alpha Vantage API access denied - check your API key');
+        }
+      }
+      console.error(`❌ Alpha Vantage historical data error for ${symbol}:`, error);
       throw error;
     }
   }
@@ -260,7 +300,7 @@ class StockAPIService {
       
       const promises = [];
       
-      // Process stock quotes individually (Finnhub doesn't support batch quotes)
+      // Process stock quotes individually (Alpha Vantage doesn't support batch quotes)
       for (const symbol of stockSymbols) {
         promises.push(this.getAssetQuote(symbol));
       }
@@ -288,38 +328,59 @@ class StockAPIService {
     }
   }
 
-  // Get company profile from Finnhub
+  // Get company profile from Alpha Vantage
   async getCompanyProfile(symbol: string): Promise<any> {
-    if (!this.finnhubKey) {
-      throw new Error('Finnhub API key not configured');
+    if (!this.alphaVantageKey) {
+      throw new Error('Alpha Vantage API key not configured');
     }
 
     try {
       const response = await axios.get(
-        `https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${this.finnhubKey}`,
-        { timeout: 5000 }
+        `https://www.alphavantage.co/query?function=OVERVIEW&symbol=${symbol}&apikey=${this.alphaVantageKey}`,
+        { timeout: 10000 }
       );
 
-      return response.data;
+      const data = response.data;
+      
+      if (data.Note && data.Note.includes('API call frequency')) {
+        throw new Error('Alpha Vantage rate limit exceeded');
+      }
+
+      if (data['Error Message']) {
+        throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+      }
+
+      return data;
     } catch (error) {
       console.error(`❌ Error fetching company profile for ${symbol}:`, error);
       throw error;
     }
   }
 
-  // Get market news from Finnhub
+  // Get market news from Alpha Vantage
   async getMarketNews(category: string = 'general'): Promise<any[]> {
-    if (!this.finnhubKey) {
-      throw new Error('Finnhub API key not configured');
+    if (!this.alphaVantageKey) {
+      throw new Error('Alpha Vantage API key not configured');
     }
 
     try {
+      // Alpha Vantage News & Sentiment API
       const response = await axios.get(
-        `https://finnhub.io/api/v1/news?category=${category}&token=${this.finnhubKey}`,
-        { timeout: 8000 }
+        `https://www.alphavantage.co/query?function=NEWS_SENTIMENT&topics=${category}&apikey=${this.alphaVantageKey}`,
+        { timeout: 10000 }
       );
 
-      return response.data;
+      const data = response.data;
+      
+      if (data.Note && data.Note.includes('API call frequency')) {
+        throw new Error('Alpha Vantage rate limit exceeded');
+      }
+
+      if (data['Error Message']) {
+        throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+      }
+
+      return data.feed || [];
     } catch (error) {
       console.error(`❌ Error fetching market news:`, error);
       throw error;
@@ -328,28 +389,40 @@ class StockAPIService {
 
   // Get stock symbols/search
   async searchSymbols(query: string): Promise<any> {
-    if (!this.finnhubKey) {
-      throw new Error('Finnhub API key not configured');
+    if (!this.alphaVantageKey) {
+      throw new Error('Alpha Vantage API key not configured');
     }
 
     try {
       const response = await axios.get(
-        `https://finnhub.io/api/v1/search?q=${query}&token=${this.finnhubKey}`,
-        { timeout: 5000 }
+        `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${query}&apikey=${this.alphaVantageKey}`,
+        { timeout: 10000 }
       );
 
-      return response.data;
+      const data = response.data;
+      
+      if (data.Note && data.Note.includes('API call frequency')) {
+        throw new Error('Alpha Vantage rate limit exceeded');
+      }
+
+      if (data['Error Message']) {
+        throw new Error(`Alpha Vantage error: ${data['Error Message']}`);
+      }
+
+      return data;
     } catch (error) {
       console.error(`❌ Error searching symbols for ${query}:`, error);
       throw error;
     }
   }
 
-  // Check API usage (Finnhub doesn't have usage endpoint, so this is a placeholder)
+  // Check API usage for Alpha Vantage (they don't provide usage endpoint, so this is informational)
   async getAPIUsage(): Promise<any> {
     return {
-      message: 'Finnhub does not provide API usage endpoint',
-      recommendation: 'Monitor rate limits through response headers'
+      message: 'Alpha Vantage API Usage Information',
+      freeLimit: '25 requests per day',
+      premiumLimits: '75-1200 requests per minute (depending on plan)',
+      recommendation: 'Monitor rate limit headers and implement caching for better performance'
     };
   }
 }

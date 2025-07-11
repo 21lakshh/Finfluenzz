@@ -200,7 +200,7 @@ function ChatBubble({ message, isUser, analysis, showChart, chartData, symbol, a
             <div className={`flex items-center mb-3 ${
               isMobile ? 'space-x-1' : 'space-x-2'
             }`}>
-              <Coins className={`text-orange-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                <Coins className={`text-orange-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               <h3 className={`font-bold text-[#001F3F] ${
                 isMobile ? 'text-sm' : 'text-lg'
               }`}>
@@ -307,7 +307,7 @@ export default function FinanceAdvisorTab() {
           try {
             chartData = await stockAPI.getAssetHistoricalData(assetSymbol, 50)
             console.log(`✅ Got crypto chart data for ${assetSymbol}:`, chartData?.length, 'data points');
-          } catch (error) {
+        } catch (error) {
             console.error('❌ Error fetching crypto chart data:', error)
           }
         }

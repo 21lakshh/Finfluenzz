@@ -3,7 +3,7 @@ import type { PatternAlert } from '../types/chartTypes';
 
 // Alert severity mapping based on pattern confidence and signal strength
 export function calculateAlertSeverity(pattern: PatternDetection): 'LOW' | 'MEDIUM' | 'HIGH' {
-  const { confidence, strength, signal } = pattern;
+  const { confidence, strength } = pattern;
   
   // Strong patterns with high confidence get HIGH severity
   if (strength === 'STRONG' && confidence >= 80) {
@@ -136,7 +136,7 @@ export function showBrowserNotification(alert: PatternAlert): void {
   }
   
   if (Notification.permission === 'granted') {
-    const { title, message, icon } = formatAlertForDisplay(alert);
+    const { title, message} = formatAlertForDisplay(alert);
     
     new Notification(title, {
       body: message,

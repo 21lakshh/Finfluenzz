@@ -203,19 +203,6 @@ export class CandlestickPatternDetector {
     return candle.close < candle.open;
   }
 
-  private getAverageRange(endIndex: number, periods: number = 10): number {
-    const startIndex = Math.max(0, endIndex - periods + 1);
-    let totalRange = 0;
-    let count = 0;
-
-    for (let i = startIndex; i <= endIndex; i++) {
-      totalRange += this.getCandleRange(this.data[i]);
-      count++;
-    }
-
-    return count > 0 ? totalRange / count : 0;
-  }
-
   private calculateStrength(confidence: number): 'WEAK' | 'MODERATE' | 'STRONG' {
     if (confidence >= 80) return 'STRONG';
     if (confidence >= 60) return 'MODERATE';

@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import  { useEffect, useRef, useState } from 'react';
 import { createChart } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData as LWCandlestickData, Time } from 'lightweight-charts';
 import type { CandlestickData } from '../../services/stockAPI';
 import type { PatternDetection } from '../../utils/candlestickPatterns';
 import { PATTERN_CONFIGS, getPatternColor } from '../../utils/candlestickPatterns';
-import { formatISTTime, getTimezoneInfo } from '../../utils/timezoneUtils';
+import { formatISTTime } from '../../utils/timezoneUtils';
 
 interface CandlestickChartProps {
   data: CandlestickData[];

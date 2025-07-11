@@ -112,7 +112,6 @@ export function useChartDataCache() {
 
   // Clear expired cache entries
   const clearExpiredCache = useCallback(() => {
-    const now = new Date();
     let clearedCount = 0;
 
     Object.keys(cacheRef.current).forEach(symbol => {

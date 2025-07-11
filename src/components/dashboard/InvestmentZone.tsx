@@ -175,7 +175,7 @@ export default function InvestmentZone() {
             </div>
             
             <div className="text-xs text-[#007FFF] mb-4 font-mono">
-              Analyzed on {new Date().toLocaleDateString('en-GB')} • Real-time market data
+              Analyzed on {new Date().toLocaleDateString('en-IN')} • Real-time market data • 🇮🇳 IST
             </div>
 
             {/* Score Cards */}

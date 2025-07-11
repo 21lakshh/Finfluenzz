@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import type { StockHistoricalData } from '../../services/stockAPI';
+import { formatISTDate } from '../../utils/timezoneUtils';
 
 ChartJS.register(
   CategoryScale,
@@ -49,10 +50,10 @@ export default function ProfessionalStockChart({
   // Prepare chart data
   const chartLabels = data.map(d => {
     const date = new Date(d.date);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return formatISTDate(date, { month: 'short', day: 'numeric' });
   }).reverse();
 
-  const priceData = data.map(d => (d.close * 83).toFixed(2)).reverse();
+  const priceData = data.map(d => (d.close * 85.79).toFixed(2)).reverse();
   const volumeData = data.map(d => d.volume).reverse();
 
   // Price chart configuration
@@ -212,12 +213,12 @@ export default function ProfessionalStockChart({
               {symbol}
             </h3>
             <p className="text-sm text-gray-500">
-              Last {data.length} days
+              Last {data.length} days • 🇮🇳 Times in IST
             </p>
           </div>
           <div className="text-right">
             <p className="text-3xl font-bold text-gray-900">
-              ₹{(lastPrice * 83).toFixed(2)}
+              ₹{(lastPrice * 85.79).toFixed(0)}
             </p>
             <p className={`text-lg font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
               {isPositive ? '+' : ''}{percentChange.toFixed(2)}%
@@ -249,13 +250,13 @@ export default function ProfessionalStockChart({
           <div className="text-center">
             <p className="text-xs text-gray-500 font-medium">HIGH</p>
             <p className="text-sm font-bold text-gray-900">
-              ₹{(Math.max(...data.map(d => d.high)) * 83).toFixed(2)}
+              ₹{(Math.max(...data.map(d => d.high)) * 85.79).toFixed(0)}
             </p>
           </div>
           <div className="text-center">
             <p className="text-xs text-gray-500 font-medium">LOW</p>
             <p className="text-sm font-bold text-gray-900">
-              ₹{(Math.min(...data.map(d => d.low)) * 83).toFixed(2)}
+              ₹{(Math.min(...data.map(d => d.low)) * 85.79).toFixed(0)}
             </p>
           </div>
           <div className="text-center">

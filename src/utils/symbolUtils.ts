@@ -84,6 +84,15 @@ export function extractAssetSymbol(message: string): string | null {
     const lowerMessage = message.toLowerCase();
     console.log(`📝 Lowercase message: "${lowerMessage}"`);
 
+    // 0. First try direct symbol detection (simple word matching)
+    const commonSymbols = ['AAPL', 'TSLA', 'GOOGL', 'MSFT', 'AMZN', 'META', 'NVDA', 'NFLX', 'BTC', 'ETH', 'ADA', 'SOL', 'DOT', 'LINK'];
+    for (const symbol of commonSymbols) {
+        if (message.toUpperCase().includes(symbol)) {
+            console.log(`✅ Found direct symbol match: ${symbol}`);
+            return symbol;
+        }
+    }
+
     // 1. First try exact symbol patterns (TSLA, BTC, etc.)
     const symbolPatterns = [
         /\$([A-Z]{1,5})\b/gi,           // $AAPL, $BTC
@@ -95,16 +104,33 @@ export function extractAssetSymbol(message: string): string | null {
         /\b([A-Z]{2,5})\s+(?:recommendation|advice|forecast|prediction)\b/gi,  // AAPL recommendation
         /\b(?:analyze|analysis)\s+([A-Z]{2,5})\b/gi,  // analyze TSLA
         /\b(?:what|how).*?([A-Z]{2,5})\s+(?:doing|performing)\b/gi,  // how is TSLA doing
+        /\b([A-Z]{2,5})\s+(?:real-time|realtime|signals|patterns|candlestick|trends|live)\b/gi,  // TSLA real-time, AAPL signals
+        /\b(?:show|display)\s+([A-Z]{2,5})\b/gi,  // show TSLA, display AAPL
+        /\b([A-Z]{2,5})\s+(?:intraday|daily|chart|charts)\b/gi,  // TSLA intraday, AAPL chart
     ];
 
-    for (const pattern of symbolPatterns) {
+    for (let i = 0; i < symbolPatterns.length; i++) {
+        const pattern = symbolPatterns[i];
         pattern.lastIndex = 0; // Reset regex
+        console.log(`🔍 Testing pattern ${i + 1}: ${pattern.source} against: "${message}"`);
         const match = pattern.exec(message);
         if (match) {
             const symbol = match[1].toUpperCase();
-            console.log(`✅ Found symbol pattern: ${symbol}`);
+            console.log(`✅ Found symbol pattern: ${symbol} using pattern: ${pattern.source}`);
             return symbol;
+        } else {
+            console.log(`❌ Pattern ${i + 1} did not match`);
         }
+    }
+
+    // 1.5. Simple fallback - look for any standalone 2-5 letter sequence that could be a symbol
+    const simplePattern = /\b([A-Z]{2,5})\b/gi;
+    simplePattern.lastIndex = 0;
+    const simpleMatch = simplePattern.exec(message);
+    if (simpleMatch) {
+        const symbol = simpleMatch[1].toUpperCase();
+        console.log(`✅ Found simple symbol pattern: ${symbol}`);
+        return symbol;
     }
 
     // 2. Check for direct company/project name matches (sort by length for better matching)

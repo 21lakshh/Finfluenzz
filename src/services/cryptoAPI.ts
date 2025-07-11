@@ -89,7 +89,7 @@ export class CryptoAPIService {
     }
 
     // Get crypto historical data using market chart endpoint (more reliable)
-    async getCryptoHistoricalData(symbol: string, days: number = 30): Promise<CryptoHistoricalData[]> {
+    async getCryptoHistoricalData(symbol: string, days: number = 50): Promise<CryptoHistoricalData[]> {
         try {
             const coinId = getCoinGeckoId(symbol);
             console.log(`🔍 Fetching crypto data for ${symbol} (${coinId}) - ${days} days`);

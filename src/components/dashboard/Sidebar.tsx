@@ -5,6 +5,7 @@ import {
   Trophy, 
   TrendingUp, 
   PiggyBank,
+  Newspaper,
   LogOut,
   User,
   X
@@ -39,6 +40,12 @@ const tabItems: TabItem[] = [
     label: 'FINANCE ADVISOR',
     icon: <MessageSquare className="w-5 h-5" />,
     description: 'AI Chatbot'
+  },
+  {
+    id: 'news',
+    label: 'NEWS TERMINAL',
+    icon: <Newspaper className="w-5 h-5" />,
+    description: 'Live Financial News'
   },
   {
     id: 'challenges',

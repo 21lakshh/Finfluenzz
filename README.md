@@ -21,6 +21,7 @@ To democratize financial literacy and empower the next generation with smart mon
 ### 🤖 AI Finance Advisor
 - **Smart Investment Recommendations** powered by Groq AI
 - **Real-time Stock Analysis** using Alpha Vantage & Finnhub APIs
+- **Live News Feed** with crypto and stock news integration
 - **Personalized Financial Advice** based on user profile and goals
 - **Technical Indicators** including RSI, SMA, MACD calculations
 - **Risk Assessment** and confidence scoring for investment decisions
@@ -116,6 +117,12 @@ To democratize financial literacy and empower the next generation with smart mon
    ```
 
 4. **Environment Setup**
+   
+   **Frontend (Create `.env` file in root):**
+   ```env
+   VITE_FINNHUB_API_KEY="your-finnhub-api-key"
+   VITE_ALPHA_VANTAGE_API_KEY="your-alpha-vantage-key"
+   ```
    
    **Backend (Environmental Variables):**
    ```env

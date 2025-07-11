@@ -1,4 +1,5 @@
 import type { StockHistoricalData } from '../../services/stockAPI';
+import { formatISTDate } from '../../utils/timezoneUtils';
 
 interface PixelStockChartProps {
   data: StockHistoricalData[];
@@ -110,12 +111,12 @@ export default function PixelStockChart({
               📈 {symbol} CHART
             </h3>
             <p className="text-sm text-[#001F3F] opacity-70">
-              Last {data.length} days
+              Last {data.length} days • 🇮🇳 IST
             </p>
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-[#001F3F]">
-              ₹{(lastPrice * 83).toFixed(2)}
+              ₹{(lastPrice * 85.79).toFixed(0)}
             </p>
             <p className={`text-sm font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
               {isPositive ? '+' : ''}{percentChange.toFixed(2)}%
@@ -181,7 +182,7 @@ export default function PixelStockChart({
                 opacity="0"
                 className="hover:opacity-100 transition-opacity pointer-events-none"
               >
-                ₹{(point.price * 83).toFixed(0)}
+                ₹{(point.price * 85.79).toFixed(0)}
               </text>
               <text
                 x={point.x}
@@ -192,7 +193,7 @@ export default function PixelStockChart({
                 opacity="0"
                 className="hover:opacity-100 transition-opacity pointer-events-none"
               >
-                {new Date(point.date).toLocaleDateString()}
+                {formatISTDate(new Date(point.date), { month: 'short', day: 'numeric' })}
               </text>
             </g>
           ))}
@@ -211,7 +212,7 @@ export default function PixelStockChart({
                 fill="#001F3F"
                 className="font-mono"
               >
-                ₹{(price * 83).toFixed(0)}
+                ₹{(price * 85.79).toFixed(0)}
               </text>
             );
           })}
@@ -229,7 +230,7 @@ export default function PixelStockChart({
                 fill="#001F3F"
                 className="font-mono"
               >
-                {new Date(point.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {formatISTDate(new Date(point.date), { month: 'short', day: 'numeric' })}
               </text>
             );
           })}
@@ -272,7 +273,7 @@ export default function PixelStockChart({
           </div>
         </div>
         <div className="font-mono">
-          Range: ₹{(minPrice * 83).toFixed(0)} - ₹{(maxPrice * 83).toFixed(0)}
+          Range: ₹{(minPrice * 85.79).toFixed(0)} - ₹{(maxPrice * 85.79).toFixed(0)}
         </div>
       </div>
     </div>

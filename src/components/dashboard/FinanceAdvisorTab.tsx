@@ -1,24 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Brain, MessageSquare, AlertTriangle, TrendingUp, Coins } from 'lucide-react'
 import financeAdvisorAgent from '../../Agents/financeAdvisorAgent'
+import AdvancedStockChart from '../charts/AdvancedStockChart'
 import ProfessionalStockChart from '../charts/ProfessionalStockChart'
 import { stockAPI } from '../../services/stockAPI'
 import { extractAssetSymbol } from '../../utils/symbolUtils'
 import { useIsMobile } from '../../hooks/use-Mobile'
 import type { ChatMessage, AnalysisResponse } from '../../Agents/financeAdvisorAgent'
 import type { AssetHistoricalData, AssetType } from '../../services/stockAPI'
+import type { ChartViewMode } from '../../types/chartTypes'
+import type { PatternDetection } from '../../utils/candlestickPatterns'
 
 interface ChatBubbleProps {
   message: string
   isUser: boolean
   analysis?: AnalysisResponse
-  chartData?: AssetHistoricalData[]
+  showChart?: boolean
+  chartData?: AssetHistoricalData[] // For crypto charts
   symbol?: string
   assetType?: AssetType
+  chartViewMode?: ChartViewMode
   isMobile?: boolean
 }
 
-function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType, isMobile = false }: ChatBubbleProps) {
+function ChatBubble({ message, isUser, analysis, showChart, chartData, symbol, assetType, chartViewMode = 'line', isMobile = false }: ChatBubbleProps) {
   if (isUser) {
     return (
       <div className="flex justify-end mb-4">
@@ -170,21 +175,36 @@ function ChatBubble({ message, isUser, analysis, chartData, symbol, assetType, i
           </div>
         )}
 
-        {/* Asset Chart */}
-        {chartData && symbol && (
+        {/* Asset Charts - Advanced for Stocks, Original for Crypto */}
+        {showChart && symbol && assetType === 'stock' && (
+          <div className="mt-6">
+            <AdvancedStockChart 
+              symbol={symbol}
+              initialViewMode={chartViewMode}
+              isMobile={isMobile}
+              config={{
+                height: isMobile ? 300 : 400,
+                showVolume: !isMobile,
+                showPatterns: chartViewMode === 'candlestick'
+              }}
+              onPatternClick={(pattern: PatternDetection) => {
+                console.log('Pattern clicked:', pattern);
+              }}
+            />
+          </div>
+        )}
+
+        {/* Original Chart for Crypto */}
+        {chartData && symbol && assetType === 'crypto' && (
           <div className="mt-6">
             <div className={`flex items-center mb-3 ${
               isMobile ? 'space-x-1' : 'space-x-2'
             }`}>
-              {assetType === 'crypto' ? (
-                <Coins className={`text-orange-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-              ) : (
-                <TrendingUp className={`text-green-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-              )}
+              <Coins className={`text-orange-500 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
               <h3 className={`font-bold text-[#001F3F] ${
                 isMobile ? 'text-sm' : 'text-lg'
               }`}>
-                {symbol} {assetType === 'crypto' ? 'Price Chart' : 'Stock Chart'}
+                {symbol} Crypto Chart
               </h3>
             </div>
             <ProfessionalStockChart 
@@ -206,12 +226,14 @@ export default function FinanceAdvisorTab() {
     text: string
     isUser: boolean
     analysis?: AnalysisResponse
+    showChart?: boolean
     chartData?: AssetHistoricalData[]
     symbol?: string
     assetType?: AssetType
+    chartViewMode?: ChartViewMode
   }>>([
     {
-      text: "Yo! 👋 FinanceGuru here, ready to analyze stocks AND crypto with REAL data! 🚀\n\nI'm connected to live APIs for real-time prices, technical indicators, and market data. Just ask me about any stock or crypto!\n\n💡 Try:\n• \"How is TSLA doing?\"\n• \"Should I buy BTC?\"\n• \"Analyze AAPL stock\"\n• \"What's up with SOL?\"\n\nLet's make some money moves! 💰🔥",
+      text: "Yo! 👋 FinanceGuru here, ready to analyze stocks AND crypto with REAL data! 🚀\n\nI'm now equipped with ADVANCED CHARTING for STOCKS:\n\n🔥 **REAL-TIME CANDLESTICKS** with pattern detection\n📈 **50-DAY TREND ANALYSIS** with key metrics\n⚡ **Live pattern alerts** for trading signals\n💰 **Crypto charts** using CoinGecko data\n\n💡 Try:\n• \"Show TSLA candlestick patterns\" (Advanced Stock Chart)\n• \"NVDA real-time signals\" (Pattern Detection)\n• \"BTC analysis\" (Crypto Chart)\n• \"ETH trends\" (Crypto Analysis)\n\nLet's make some money moves! 💰🔥📊",
       isUser: false
     }
   ])
@@ -242,26 +264,67 @@ export default function FinanceAdvisorTab() {
       
       // Extract asset symbol and determine type
       const assetSymbol = extractAssetSymbol(userMessage)
-      let chartData: AssetHistoricalData[] | undefined
+      console.log(`🎯 Extracted symbol: ${assetSymbol} from message: "${userMessage}"`);
+      
       let assetType: AssetType | undefined
+      let showChart = false
+      let chartData: AssetHistoricalData[] | undefined
+      let chartViewMode: ChartViewMode = 'line'
       
       if (assetSymbol) {
-        try {
-          assetType = stockAPI.getAssetType(assetSymbol)
-          chartData = await stockAPI.getAssetHistoricalData(assetSymbol, 30)
-        } catch (error) {
-          console.error('Error fetching chart data:', error)
+        assetType = stockAPI.getAssetType(assetSymbol)
+        console.log(`📊 Asset type for ${assetSymbol}: ${assetType}`);
+        
+        if (assetType === 'stock') {
+          // For stocks, use advanced charting system
+          showChart = true
+          console.log(`🚀 Enabling stock chart for ${assetSymbol}`);
+          
+          // Determine chart view mode based on user request
+          const lowerMessage = userMessage.toLowerCase()
+          if (lowerMessage.includes('candlestick') || 
+              lowerMessage.includes('pattern') || 
+              lowerMessage.includes('real-time') ||
+              lowerMessage.includes('signals') ||
+              lowerMessage.includes('intraday')) {
+            chartViewMode = 'candlestick'
+            console.log(`📈 Using candlestick mode for ${assetSymbol}`);
+          } else if (lowerMessage.includes('trend') || 
+                     lowerMessage.includes('30 day') || 
+                     lowerMessage.includes('50 day') || 
+                     lowerMessage.includes('monthly') ||
+                     lowerMessage.includes('history')) {
+            chartViewMode = 'line'
+            console.log(`📊 Using line mode for ${assetSymbol}`);
+          } else {
+            // Default to line chart for general stock analysis
+            chartViewMode = 'line'
+            console.log(`📊 Using default line mode for ${assetSymbol}`);
+          }
+        } else if (assetType === 'crypto') {
+          // For crypto, use original chart system with CoinGecko data
+          console.log(`₿ Fetching crypto chart data for ${assetSymbol}`);
+          try {
+            chartData = await stockAPI.getAssetHistoricalData(assetSymbol, 50)
+            console.log(`✅ Got crypto chart data for ${assetSymbol}:`, chartData?.length, 'data points');
+          } catch (error) {
+            console.error('❌ Error fetching crypto chart data:', error)
+          }
         }
+      } else {
+        console.log(`❌ No symbol extracted from: "${userMessage}"`);
       }
 
-      // Add AI response with analysis and chart
+      // Add AI response with analysis and chart configuration
       setMessages(prev => [...prev, { 
         text: analysis.message, 
         isUser: false, 
         analysis,
+        showChart,
         chartData,
         symbol: assetSymbol || undefined,
-        assetType
+        assetType,
+        chartViewMode
       }])
 
       // Update chat history
@@ -289,14 +352,14 @@ export default function FinanceAdvisorTab() {
     }
   }
 
-  // Enhanced quick action buttons for both stocks and crypto
+  // Enhanced quick action buttons - Advanced charts for stocks, CoinGecko for crypto
   const quickActions = [
-    { label: "📈 AAPL Analysis", message: "Analyze AAPL stock for me", type: "stock" },
-    { label: "₿ Bitcoin Vibes", message: "What's the deal with BTC?", type: "crypto" },
-    { label: "🚗 Tesla Check", message: "Should I buy TSLA right now?", type: "stock" },
-    { label: "⚡ Ethereum Deep Dive", message: "Give me an ETH analysis", type: "crypto" },
-    { label: "🔥 NVDA Trends", message: "NVIDIA stock analysis", type: "stock" },
-    { label: "🌟 Solana Surge", message: "How is SOL performing today?", type: "crypto" }
+    { label: "📈 AAPL Patterns", message: "Show AAPL candlestick patterns", type: "stock", mode: "candlestick" },
+    { label: "₿ BTC Analysis", message: "Analyze BTC price and trends", type: "crypto", mode: "line" },
+    { label: "🚗 TSLA Signals", message: "TSLA real-time signals", type: "stock", mode: "candlestick" },
+    { label: "⚡ ETH Analysis", message: "How is ETH performing today?", type: "crypto", mode: "line" },
+    { label: "🔥 NVDA Live", message: "NVDA live candlestick patterns", type: "stock", mode: "candlestick" },
+    { label: "🌟 SOL Trends", message: "Analyze SOL crypto trends", type: "crypto", mode: "line" }
   ]
 
   return (
@@ -320,7 +383,7 @@ export default function FinanceAdvisorTab() {
             <p className={`text-[#001F3F] opacity-70 ${
               isMobile ? 'text-xs' : ''
             }`}>
-              Gen Z AI • Stocks & Crypto Analysis • Real-time data • No cap! 💯
+              Gen Z AI • Advanced Charts • Pattern Detection • Real-time Candlesticks • No cap! 💯
             </p>
           </div>
         </div>
@@ -372,9 +435,11 @@ export default function FinanceAdvisorTab() {
               message={message.text} 
               isUser={message.isUser}
               analysis={message.analysis}
+              showChart={message.showChart}
               chartData={message.chartData}
               symbol={message.symbol}
               assetType={message.assetType}
+              chartViewMode={message.chartViewMode}
               isMobile={isMobile}
             />
           ))}
@@ -446,13 +511,13 @@ export default function FinanceAdvisorTab() {
             isMobile ? 'text-xs' : 'text-xs'
           }`}>
             <span>💡</span>
-            <p>Pro tip: If I don't understand, try exact names like "TSLA", "BTC", "NVDA", "ETH" or "SOL"</p>
+            <p>Pro tip: Ask for "candlestick patterns", "real-time signals", or "50-day trends" for advanced charts!</p>
           </div>
           <div className={`flex items-center space-x-2 text-[#001F3F] opacity-60 ${
             isMobile ? 'text-xs' : 'text-xs'
           }`}>
             <AlertTriangle className="w-4 h-4" />
-            <p>Not financial advice • DYOR • Stocks & crypto are risky AF • CoinGecko & stock APIs for data</p>
+            <p>Not financial advice • DYOR • Advanced charts with pattern detection • Alpha Vantage & CoinGecko APIs</p>
           </div>
         </div>
       </div>

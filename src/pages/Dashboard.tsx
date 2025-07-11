@@ -5,7 +5,7 @@ import Sidebar from '../components/dashboard/Sidebar'
 import DashboardContent from '../components/dashboard/DashboardContent'
 import { useIsMobile } from '../hooks/use-Mobile'
 
-export type TabType = 'home' | 'finance-advisor' | 'challenges' | 'investment' | 'budget-tracker'
+export type TabType = 'home' | 'finance-advisor' | 'news' | 'challenges' | 'investment' | 'budget-tracker'
 
 export default function Dashboard() {
   const navigate = useNavigate()

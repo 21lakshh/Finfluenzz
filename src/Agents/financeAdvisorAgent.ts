@@ -238,7 +238,7 @@ async function getAssetAnalysisData(symbol: string): Promise<AssetAnalysisData> 
 
     return {
         quote,
-        historicalData: historicalData.slice(0, 30), // Return 30 days for charts
+        historicalData: historicalData.slice(0, 50), // Return 50 days for charts
         technicalIndicators,
         symbol: correctedSymbol,
         assetType
@@ -254,8 +254,8 @@ function createAssetAnalysisContext(data: AssetAnalysisData, userMessage: string
     const { quote, historicalData, technicalIndicators, symbol, assetType } = data;
     
     // Calculate additional metrics
-    const priceChange30Day = historicalData.length >= 30 
-        ? ((quote.price - historicalData[29].close) / historicalData[29].close) * 100
+        const priceChange50Day = historicalData.length >= 50
+        ? ((quote.price - historicalData[49].close) / historicalData[49].close) * 100
         : 0;
 
     const recentVolume = historicalData.slice(0, 5).reduce((sum, day) => sum + day.volume, 0) / 5;
@@ -290,7 +290,7 @@ User Question: ${userMessage}
 - MACD Trend: ${technicalIndicators.macd.line > technicalIndicators.macd.signal ? 'Bullish 🟢' : 'Bearish 🔴'}
 
 📊 Price Performance:
-- 30-day change: ${priceChange30Day >= 0 ? '+' : ''}${priceChange30Day.toFixed(2)}%
+- 50-day change: ${priceChange50Day >= 0 ? '+' : ''}${priceChange50Day.toFixed(2)}%
 - Volume Activity: ${volumeRatio.toFixed(1)}x ${volumeRatio > 1.2 ? '(High Volume 🔥)' : volumeRatio < 0.8 ? '(Low Volume 😴)' : '(Normal Volume ✅)'}
 
 🎯 Recent Price Action (Last 7 Days):
@@ -312,33 +312,33 @@ User Question: ${userMessage}
 🔥 LIVE STOCK DATA FOR ${symbol} (REAL-TIME):
 
 📊 Current Quote:
-- Price: ₹${(quote.price * 83).toFixed(2)} (${quote.price.toFixed(2)} USD)
+- Price: ₹${(quote.price * 85.79).toFixed(0)} (${quote.price.toFixed(2)} USD)
 - Daily Change: ${quote.change >= 0 ? '+' : ''}${quote.change.toFixed(2)} (${quote.changePercent.toFixed(2)}%)
 - Volume: ${quote.volume.toLocaleString()}
-- 52W High: ₹${(((quote as any).high52Week || 0) * 83).toFixed(2)}
-- 52W Low: ₹${(((quote as any).low52Week || 0) * 83).toFixed(2)}
+- 52W High: ₹${(((quote as any).high52Week || 0) * 85.79).toFixed(0)}
+- 52W Low: ₹${(((quote as any).low52Week || 0) * 85.79).toFixed(0)}
 
 📈 Technical Indicators (LIVE):
 - RSI: ${technicalIndicators.rsi.toFixed(1)} ${technicalIndicators.rsi > 70 ? '(Overbought 🔴)' : technicalIndicators.rsi < 30 ? '(Oversold 🟢)' : '(Neutral 🟡)'}
-- SMA 20: ₹${(technicalIndicators.sma20 * 83).toFixed(2)}
-- SMA 50: ₹${(technicalIndicators.sma50 * 83).toFixed(2)}
+- SMA 20: ₹${(technicalIndicators.sma20 * 85.79).toFixed(0)}
+- SMA 50: ₹${(technicalIndicators.sma50 * 85.79).toFixed(0)}
 - Price vs SMA20: ${quote.price > technicalIndicators.sma20 ? 'Above 📈' : 'Below 📉'}
 - Price vs SMA50: ${quote.price > technicalIndicators.sma50 ? 'Above 📈' : 'Below 📉'}
 - MACD: ${technicalIndicators.macd.line.toFixed(3)} (Signal: ${technicalIndicators.macd.signal.toFixed(3)})
 - MACD Trend: ${technicalIndicators.macd.line > technicalIndicators.macd.signal ? 'Bullish 🟢' : 'Bearish 🔴'}
 
 📊 Price Performance:
-- 30-day change: ${priceChange30Day >= 0 ? '+' : ''}${priceChange30Day.toFixed(2)}%
+- 50-day change: ${priceChange50Day >= 0 ? '+' : ''}${priceChange50Day.toFixed(2)}%
 - Volume vs Average: ${volumeRatio.toFixed(1)}x ${volumeRatio > 1.2 ? '(High Volume 🔥)' : volumeRatio < 0.8 ? '(Low Volume 😴)' : '(Normal Volume ✅)'}
 
 🎯 Recent Price Action (Last 7 Days):
 ${historicalData.slice(0, 7).map(day => 
-    `${day.date}: ₹${(day.close * 83).toFixed(2)} (${((day.close - day.open) / day.open * 100).toFixed(1)}%)`
+    `${day.date}: ₹${(day.close * 85.79).toFixed(0)} (${((day.close - day.open) / day.open * 100).toFixed(1)}%)`
 ).join('\n')}
 
 💡 Key Levels:
-- Support: ₹${(Math.min(...historicalData.slice(0, 7).map(d => d.low)) * 83).toFixed(2)}
-- Resistance: ₹${(Math.max(...historicalData.slice(0, 7).map(d => d.high)) * 83).toFixed(2)}
+- Support: ₹${(Math.min(...historicalData.slice(0, 7).map(d => d.low)) * 85.79).toFixed(0)}
+- Resistance: ₹${(Math.max(...historicalData.slice(0, 7).map(d => d.high)) * 85.79).toFixed(0)}
 
 Analyze this REAL data and provide your Gen Z finance guru perspective with specific insights! Remember to be honest about risks and mention this is not financial advice! 🚀💯
         `.trim();

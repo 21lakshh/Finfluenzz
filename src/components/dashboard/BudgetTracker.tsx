@@ -4,6 +4,7 @@ import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign
 import { useIsMobile } from '../../hooks/use-Mobile'
 import expenseSummarizerAgent from '../../Agents/expenseSummarizerAgent'
 import type { SummaryRequest } from '../../Agents/expenseSummarizerAgent'
+import { formatISTDate } from '../../utils/timezoneUtils'
 
 export interface ExpenseItem {
   id: string
@@ -284,7 +285,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
 
   const formatDate = (dateString?: string) => {
     const date = dateString ? new Date(dateString) : new Date()
-    return date.toLocaleDateString('en-US', {
+    return formatISTDate(date, {
       month: 'short',
       day: 'numeric',
       year: 'numeric'

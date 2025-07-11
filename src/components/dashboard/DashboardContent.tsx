@@ -2,6 +2,7 @@ import type { TabType } from '../../pages/Dashboard'
 import ChallengesTab from './ChallengesTab'
 import BudgetTracker from './BudgetTracker'
 import FinanceAdvisorTab from './FinanceAdvisorTab'
+import NewsTab from './NewsTab'
 import InvestmentZone from './InvestmentZone'
 import { useUser } from '../../hooks/useUser'
 
@@ -32,6 +33,9 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
     switch (activeTab) {
       case 'finance-advisor':
         return <FinanceAdvisorTab />
+      
+      case 'news':
+        return <NewsTab />
       
       case 'challenges':
         return <ChallengesTab />
@@ -151,7 +155,7 @@ export default function DashboardContent({ activeTab, sidebarWidth, isMobile = f
       </div>
 
       {/* Main Content Area */}
-      <div className={`min-h-[400px] ${activeTab === 'challenges' || activeTab === 'budget-tracker' || activeTab === 'finance-advisor' ? '' : 'flex items-center justify-center'}`}>
+      <div className={`min-h-[400px] ${activeTab === 'challenges' || activeTab === 'budget-tracker' || activeTab === 'finance-advisor' || activeTab === 'news' ? '' : 'flex items-center justify-center'}`}>
         {renderContent()}
       </div>
 

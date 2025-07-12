@@ -126,6 +126,15 @@ export default async function financeAdvisorAgent(
             try {
                 assetData = await getAssetAnalysisData(assetSymbol);
                 console.log(`📊 Fetched data for ${assetSymbol} (${assetData.assetType}):`, assetData.quote);
+                
+                // Check if we're using fallback data and inform the user
+                const isUsingFallback = assetData.quote.price > 0 && 
+                    (assetData.quote as any).name === undefined && // Stock quotes don't have name
+                    assetData.assetType === 'stock';
+                
+                if (isUsingFallback) {
+                    console.log(`⚠️ Using fallback data for ${assetSymbol} - Alpha Vantage API may be down or rate limited`);
+                }
             } catch (assetError) {
                 console.error('Asset data error:', assetError);
                 const errorMessage = assetError instanceof Error ? assetError.message : 'Unknown error occurred';
@@ -265,10 +274,12 @@ function createAssetAnalysisContext(data: AssetAnalysisData, userMessage: string
     // Create asset-specific context
     if (assetType === 'crypto') {
         const cryptoQuote = quote as any; // CryptoQuote type
+        const isFallbackData = !cryptoQuote.name || cryptoQuote.name === `${symbol} Token`; // Detect fallback crypto data
+        
         return `
 User Question: ${userMessage}
 
-🔥 LIVE CRYPTO DATA FOR ${symbol} (REAL-TIME):
+🔥 ${isFallbackData ? 'FALLBACK' : 'LIVE'} CRYPTO DATA FOR ${symbol} ${isFallbackData ? '(DEMO DATA - API UNAVAILABLE)' : '(REAL-TIME)'}:
 
 💰 Current Quote:
 - Name: ${cryptoQuote.name}
@@ -302,21 +313,24 @@ ${historicalData.slice(0, 7).map(day =>
 - Support: $${(Math.min(...historicalData.slice(0, 7).map(d => d.low))).toFixed(6)}
 - Resistance: $${(Math.max(...historicalData.slice(0, 7).map(d => d.high))).toFixed(6)}
 
-This is LIVE crypto data! Analyze this thoroughly and provide your Gen Z crypto guru perspective with specific insights about the technology, adoption, and price action! Remember to be honest about risks and mention this is not financial advice! 🚀💯
+This is ${isFallbackData ? 'DEMO' : 'LIVE'} crypto data! Analyze this thoroughly and provide your Gen Z crypto guru perspective with specific insights about the technology, adoption, and price action! ${isFallbackData ? 'Note: This is demo data since the live API is unavailable.' : ''} Remember to be honest about risks and mention this is not financial advice! 🚀💯
         `.trim();
     } else {
         // Stock analysis context (enhanced)
+        const stockQuote = quote as any; // StockQuote type
+        const isFallbackData = !stockQuote.name && quote.price > 0; // Stock quotes don't have name, but we can detect fallback
+        
         return `
 User Question: ${userMessage}
 
-🔥 LIVE STOCK DATA FOR ${symbol} (REAL-TIME):
+🔥 ${isFallbackData ? 'FALLBACK' : 'LIVE'} STOCK DATA FOR ${symbol} ${isFallbackData ? '(DEMO DATA - API UNAVAILABLE)' : '(REAL-TIME)'}:
 
 📊 Current Quote:
 - Price: ₹${(quote.price * 85.79).toFixed(0)} (${quote.price.toFixed(2)} USD)
 - Daily Change: ${quote.change >= 0 ? '+' : ''}${quote.change.toFixed(2)} (${quote.changePercent.toFixed(2)}%)
 - Volume: ${quote.volume.toLocaleString()}
-- 52W High: ₹${(((quote as any).high52Week || 0) * 85.79).toFixed(0)}
-- 52W Low: ₹${(((quote as any).low52Week || 0) * 85.79).toFixed(0)}
+- 52W High: ₹${((stockQuote.high52Week || 0) * 85.79).toFixed(0)}
+- 52W Low: ₹${((stockQuote.low52Week || 0) * 85.79).toFixed(0)}
 
 📈 Technical Indicators (LIVE):
 - RSI: ${technicalIndicators.rsi.toFixed(1)} ${technicalIndicators.rsi > 70 ? '(Overbought 🔴)' : technicalIndicators.rsi < 30 ? '(Oversold 🟢)' : '(Neutral 🟡)'}
@@ -340,7 +354,7 @@ ${historicalData.slice(0, 7).map(day =>
 - Support: ₹${(Math.min(...historicalData.slice(0, 7).map(d => d.low)) * 85.79).toFixed(0)}
 - Resistance: ₹${(Math.max(...historicalData.slice(0, 7).map(d => d.high)) * 85.79).toFixed(0)}
 
-Analyze this REAL data and provide your Gen Z finance guru perspective with specific insights! Remember to be honest about risks and mention this is not financial advice! 🚀💯
+Analyze this ${isFallbackData ? 'DEMO' : 'REAL'} data and provide your Gen Z finance guru perspective with specific insights! ${isFallbackData ? 'Note: This is demo data since the live API is unavailable.' : ''} Remember to be honest about risks and mention this is not financial advice! 🚀💯
         `.trim();
     }
 }

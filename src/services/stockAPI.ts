@@ -3,6 +3,13 @@ import { isCryptoSymbol } from '../utils/symbolUtils';
 import { cryptoAPI } from './cryptoAPI';
 import { calculateTechnicalIndicators } from '../utils/technicalIndicators';
 import { nowInIST, createDemoMarketHoursIST, getISTTimestamp, getMarketStatus, isUSMarketOpen, isIndianMarketOpen } from '../utils/timezoneUtils';
+import { 
+  generateFallbackStockQuote, 
+  generateFallbackStockData, 
+  generateFallbackDailyAdjustedData, 
+  generateFallbackIntradayData, 
+  generateFallbackTechnicalIndicators 
+} from '../utils/fallbackData';
 
 /**
  * Stock API Service - Using Alpha Vantage API for real-time stock data
@@ -272,14 +279,16 @@ class StockAPIService {
     }
 
     if (!this.alphaVantageKey) {
-      throw new Error('Alpha Vantage API key not configured');
+      console.warn(`⚠️ Alpha Vantage API key not configured, using fallback data for ${symbol}`);
+      return generateFallbackStockQuote(symbol);
     }
 
     try {
       return await this.getAlphaVantageQuote(symbol);
     } catch (error) {
       console.error(`❌ Error fetching stock quote for ${symbol}:`, error);
-      throw error;
+      console.warn(`🔄 Using fallback data for ${symbol} due to API error`);
+      return generateFallbackStockQuote(symbol);
     }
   }
 
@@ -295,14 +304,16 @@ class StockAPIService {
     }
 
     if (!this.alphaVantageKey) {
-      throw new Error('Alpha Vantage API key not configured');
+      console.warn(`⚠️ Alpha Vantage API key not configured, using fallback data for ${symbol}`);
+      return generateFallbackStockData(symbol, days);
     }
 
     try {
       return await this.getAlphaVantageHistorical(symbol, days);
     } catch (error) {
       console.error(`❌ Error fetching historical data for ${symbol}:`, error);
-      throw error;
+      console.warn(`🔄 Using fallback data for ${symbol} due to API error`);
+      return generateFallbackStockData(symbol, days);
     }
   }
 
@@ -316,7 +327,8 @@ class StockAPIService {
       return calculateTechnicalIndicators(historicalData);
     } catch (error) {
       console.error(`❌ Error calculating technical indicators for ${symbol}:`, error);
-      throw error;
+      console.warn(`🔄 Using fallback technical indicators for ${symbol} due to API error`);
+      return generateFallbackTechnicalIndicators(symbol);
     }
   }
 
@@ -332,7 +344,8 @@ class StockAPIService {
     }
 
     if (!this.alphaVantageKey) {
-      throw new Error('Alpha Vantage API key not configured');
+      console.warn(`⚠️ Alpha Vantage API key not configured, using fallback data for ${symbol}`);
+      return generateFallbackIntradayData(symbol);
     }
 
     // Warn if markets are closed
@@ -344,7 +357,8 @@ class StockAPIService {
       return await this.getAlphaVantageIntraday(symbol);
     } catch (error) {
       console.error(`❌ Error fetching intraday data for ${symbol}:`, error);
-      throw error;
+      console.warn(`🔄 Using fallback data for ${symbol} due to API error`);
+      return generateFallbackIntradayData(symbol);
     }
   }
 
@@ -364,14 +378,16 @@ class StockAPIService {
     }
 
     if (!this.alphaVantageKey) {
-      throw new Error('Alpha Vantage API key not configured');
+      console.warn(`⚠️ Alpha Vantage API key not configured, using fallback data for ${symbol}`);
+      return generateFallbackDailyAdjustedData(symbol, days);
     }
 
     try {
       return await this.getAlphaVantageDailyAdjusted(symbol, days);
     } catch (error) {
       console.error(`❌ Error fetching daily adjusted data for ${symbol}:`, error);
-      throw error;
+      console.warn(`🔄 Using fallback data for ${symbol} due to API error`);
+      return generateFallbackDailyAdjustedData(symbol, days);
     }
   }
 

@@ -98,6 +98,13 @@ function ChatBubble({ message, isUser, analysis, showChart, chartData, symbol, a
               <span className="text-xs text-[#001F3F] opacity-70 font-bold">
                 {assetType === 'crypto' ? 'CRYPTO' : 'STOCK'}
               </span>
+              {/* Fallback data indicator */}
+              {analysis && analysis.message.includes('DEMO DATA') && (
+                <div className="flex items-center space-x-1">
+                  <AlertTriangle className="w-3 h-3 text-yellow-500" />
+                  <span className="text-xs text-yellow-600 font-bold">DEMO</span>
+                </div>
+              )}
             </div>
           )}
           {analysis && (
@@ -417,7 +424,7 @@ export default function FinanceAdvisorTab() {
             <p className={`text-[#001F3F] opacity-70 ${
               isMobile ? 'text-xs' : ''
             }`}>
-              Gen Z AI • Advanced Charts • Pattern Detection • Real-time Candlesticks • No cap! 💯
+              Gen Z AI • Advanced Charts • Pattern Detection • Real-time Candlesticks • Fallback Data • No cap! 💯
             </p>
           </div>
         </div>
@@ -525,7 +532,7 @@ export default function FinanceAdvisorTab() {
           </div>
           <div className="flex items-center space-x-2 text-[#001F3F] opacity-60 text-xs">
             <AlertTriangle className="w-4 h-4" />
-            <p>Not financial advice • DYOR • Advanced charts with pattern detection • Alpha Vantage & CoinGecko APIs</p>
+            <p>Not financial advice • DYOR • Advanced charts with pattern detection • Alpha Vantage & CoinGecko APIs • Fallback data when APIs down</p>
           </div>
         </div>
       </div>

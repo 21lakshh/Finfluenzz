@@ -4,7 +4,7 @@ import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign
 import { useIsMobile } from '../../hooks/use-Mobile'
 import expenseSummarizerAgent from '../../Agents/expenseSummarizerAgent'
 import type { SummaryRequest } from '../../Agents/expenseSummarizerAgent'
-import { formatISTDate } from '../../utils/timezoneUtils'
+import React from 'react';
 
 export interface ExpenseItem {
   id: string
@@ -284,12 +284,18 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
   const categories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Education', 'Other']
 
   const formatDate = (dateString?: string) => {
-    const date = dateString ? new Date(dateString) : new Date()
-    return formatISTDate(date, {
+    if (!dateString) return '';
+    // Parse as local date (YYYY-MM-DD) to avoid timezone shift
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) return dateString;
+    // JS Date: month is 0-indexed
+    const localDate = new Date(year, month - 1, day);
+    return localDate.toLocaleDateString('en-IN', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
-    })
+      year: 'numeric',
+      timeZone: 'Asia/Kolkata',
+    });
   }
 
   const weekChange = lastWeekTotal > 0 ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100 : 0
@@ -469,10 +475,38 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
                   ✕ Close
                 </button>
               </div>
-              <div className={`prose prose-sm max-w-none text-gray-800 ${
-                isMobile ? 'text-xs' : 'text-sm'
-              }`}>
-                <div className="whitespace-pre-wrap">{summaryContent}</div>
+              <div 
+                className={`text-[#001F3F] leading-relaxed whitespace-pre-wrap ${
+                  isMobile ? 'text-xs' : 'text-sm'
+                }`}
+                style={{ 
+                  fontFamily: 'inherit',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {(() => {
+                  if (React.isValidElement(summaryContent)) {
+                    return '[Invalid AI response: React element received]';
+                  }
+                  
+                  if (typeof summaryContent === 'string') {
+                    // Simple markdown-style formatting
+                    return summaryContent
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .split('\n')
+                      .map((line, index) => (
+                        <div key={index} dangerouslySetInnerHTML={{ __html: line }} />
+                      ));
+                  }
+                  
+                  try {
+                    return JSON.stringify(summaryContent, null, 2);
+                  } catch (err) {
+                    console.error('Error stringifying summaryContent:', err);
+                    return '[Unable to display summary]';
+                  }
+                })()}
               </div>
             </div>
           </div>

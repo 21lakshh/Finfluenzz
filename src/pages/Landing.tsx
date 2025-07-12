@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import HeroSection from "../components/HeroSection"
 import { MarqueeDemo } from "../components/reviews"
 import { FinanceFeatures } from "../components/FinanceFeatures"
+import { Button } from "../components/button"
 
 export default function Landing() {
     const navigate = useNavigate()
@@ -51,16 +52,6 @@ export default function Landing() {
                     <div className="absolute bottom-20 right-10 w-6 h-6 bg-[#001F3F] opacity-25 animate-bounce delay-500"></div>
                 </div>
 
-                <div className="text-center mb-12 relative">
-                    <div className="bg-white/60 border-4 border-[#007FFF] p-8 max-w-2xl mx-auto" style={{ borderRadius: '0px' }}>
-                        <h2 className="text-3xl md:text-4xl font-bold text-[#001F3F] mb-4 tracking-wider">
-                            💬 WHAT USERS SAY
-                        </h2>
-                        <p className="text-xl text-[#001F3F] opacity-80">
-                            Real feedback from Gen Z investors who love Finfluenzz fr fr
-                        </p>
-                    </div>
-                </div>
                 <div className="max-w-7xl mx-auto">
                     <MarqueeDemo />
                 </div>
@@ -79,36 +70,39 @@ export default function Landing() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             {user ? (
                                 // Show dashboard button if user is logged in
-                                <button 
-                                    className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-4 text-lg font-bold border-4 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all duration-300 transform hover:scale-105"
-                                    style={{ borderRadius: '0px' }}
+                                <Button 
+                                    variant="default"
+                                    size="lg"
+                                    className="bg-[#007FFF] hover:bg-[#001F3F] text-white border-[#001F3F] font-minecraft text-lg"
                                     onClick={() => navigate('/dashboard')}
                                 >
                                     🎮 GO TO DASHBOARD
-                                </button>
+                                </Button>
                             ) : (
                                 // Show signup and signin buttons if user is not logged in
                                 <>
-                                    <button 
-                                        className="bg-gradient-to-r from-[#007FFF] to-[#001F3F] text-white px-8 py-4 text-lg font-bold border-4 border-[#001F3F] hover:from-[#001F3F] hover:to-[#007FFF] transition-all duration-300 transform hover:scale-105"
-                                        style={{ borderRadius: '0px' }}
+                                    <Button 
+                                        variant="default"
+                                        size="lg"
+                                        className="bg-[#007FFF] hover:bg-[#001F3F] text-white border-[#001F3F] font-minecraft text-lg"
                                         onClick={() => navigate('/signup')}
                                     >
                                         🎮 START YOUR JOURNEY
-                                    </button>
-                                    <button 
-                                        className="bg-white text-[#007FFF] px-8 py-4 text-lg font-bold border-4 border-[#007FFF] hover:bg-[#007FFF] hover:text-white transition-all duration-300"
-                                        style={{ borderRadius: '0px' }}
+                                    </Button>
+                                    <Button 
+                                        variant="outline"
+                                        size="lg"
+                                        className="bg-white text-[#007FFF] border-[#007FFF] hover:bg-[#007FFF] hover:text-white font-minecraft text-lg"
                                         onClick={() => navigate('/signin')}
                                     >
                                         📊 SIGN IN
-                                    </button>
+                                    </Button>
                                 </>
                             )}
                         </div>
                     </div>
                 </div>
             </section>
-</div>
+        </div>
     )
 }

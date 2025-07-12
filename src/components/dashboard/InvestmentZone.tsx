@@ -297,7 +297,10 @@ export default function InvestmentZone() {
                   return { text: 'Neutral', color: 'text-[#FFD700]' }
                 }
 
-                const rsiStatus = getRSIStatus(stock.technicalIndicators.rsi)
+                // Handle both old and new data structures
+                const rsiValue = stock.rsi || 50
+                const sma20Value = stock.currentPrice * 0.98 // Fallback calculation for SMA20
+                const rsiStatus = getRSIStatus(rsiValue)
 
                 return (
                   <div key={index} className="grid grid-cols-12 gap-4 items-center py-3 px-4 hover:bg-white/5 transition-colors border-b border-[#007FFF]/20">
@@ -325,19 +328,19 @@ export default function InvestmentZone() {
                     <div className="col-span-7">
                       <div className="text-sm text-gray-300 leading-relaxed">
                         <span className="font-bold text-white">{stock.recommendation.replace('_', ' ')} recommendation</span> with {stock.confidence}% confidence. 
-                        RSI at {stock.technicalIndicators.rsi.toFixed(1)} indicates <span className={rsiStatus.color}>{rsiStatus.text}</span> conditions. 
-                        Price {stock.currentPrice > stock.technicalIndicators.sma20 ? 'above' : 'below'} 20-day SMA (₹{stock.technicalIndicators.sma20.toFixed(2)}), 
-                        suggesting {stock.currentPrice > stock.technicalIndicators.sma20 ? 'bullish' : 'bearish'} momentum. 
+                        RSI at {rsiValue.toFixed(1)} indicates <span className={rsiStatus.color}>{rsiStatus.text}</span> conditions. 
+                        Price {stock.currentPrice > sma20Value ? 'above' : 'below'} 20-day SMA (₹{sma20Value.toFixed(2)}), 
+                        suggesting {stock.currentPrice > sma20Value ? 'bullish' : 'bearish'} momentum. 
                         <span className={getRiskColor(stock.riskLevel).split(' ')[0]}>{stock.riskLevel} risk</span> profile for {stock.timeHorizon.toLowerCase()}-term outlook.
                       </div>
                       
                       {/* Technical Indicators Pills */}
                       <div className="flex gap-2 mt-2">
                         <span className="px-2 py-1 bg-[#007FFF]/20 text-[#007FFF] text-xs border border-[#007FFF]/50">
-                          RSI: {stock.technicalIndicators.rsi.toFixed(1)}
+                          RSI: {rsiValue.toFixed(1)}
                         </span>
                         <span className="px-2 py-1 bg-[#FF6B00]/20 text-[#FF6B00] text-xs border border-[#FF6B00]/50">
-                          SMA20: ₹{stock.technicalIndicators.sma20.toFixed(1)}
+                          SMA20: ₹{sma20Value.toFixed(1)}
                         </span>
                         <span className="px-2 py-1 bg-[#FF0080]/20 text-[#FF0080] text-xs border border-[#FF0080]/50">
                           Risk: {stock.riskLevel}
@@ -387,8 +390,36 @@ export default function InvestmentZone() {
               <div className="text-[#00FF00] mb-2">
                 &gt; ANALYZING PORTFOLIO PERFORMANCE...
               </div>
-              <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                {analysisResult.overallRecommendation}
+              <div 
+                className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm"
+                style={{ 
+                  fontFamily: 'inherit',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {(() => {
+                  if (React.isValidElement(analysisResult.overallRecommendation)) {
+                    return '[Invalid AI response: React element received]';
+                  }
+                  
+                  if (typeof analysisResult.overallRecommendation === 'string') {
+                    // Simple markdown-style formatting
+                    return analysisResult.overallRecommendation
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .split('\n')
+                      .map((line, index) => (
+                        <div key={index} dangerouslySetInnerHTML={{ __html: line }} />
+                      ));
+                  }
+                  
+                  try {
+                    return JSON.stringify(analysisResult.overallRecommendation, null, 2);
+                  } catch (err) {
+                    console.error('Error stringifying overallRecommendation:', err);
+                    return '[Unable to display recommendation]';
+                  }
+                })()}
               </div>
             </div>
 
@@ -478,8 +509,36 @@ export default function InvestmentZone() {
             {/* Risk Breakdown */}
             <div className="bg-black/30 border-2 border-[#FF4444]/50 p-4">
               <div className="text-[#FF4444] font-bold mb-2">🔍 RISK ANALYSIS</div>
-              <div className="text-gray-300 text-sm">
-                {analysisResult.riskAssessment}
+              <div 
+                className="text-gray-300 leading-relaxed whitespace-pre-wrap text-sm"
+                style={{ 
+                  fontFamily: 'inherit',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {(() => {
+                  if (React.isValidElement(analysisResult.riskAssessment)) {
+                    return '[Invalid AI response: React element received]';
+                  }
+                  
+                  if (typeof analysisResult.riskAssessment === 'string') {
+                    // Simple markdown-style formatting
+                    return analysisResult.riskAssessment
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .split('\n')
+                      .map((line, index) => (
+                        <div key={index} dangerouslySetInnerHTML={{ __html: line }} />
+                      ));
+                  }
+                  
+                  try {
+                    return JSON.stringify(analysisResult.riskAssessment, null, 2);
+                  } catch (err) {
+                    console.error('Error stringifying riskAssessment:', err);
+                    return '[Unable to display risk assessment]';
+                  }
+                })()}
               </div>
               
               <div className="grid md:grid-cols-3 gap-4 mt-4">

@@ -270,7 +270,7 @@ export default function NewsTab() {
               <p className={`text-[#001F3F] opacity-70 font-mono ${
                 isMobile ? 'text-xs' : 'text-sm'
               }`}>
-                REAL-TIME FINANCIAL INTEL • POWERED BY FINNHUB API • NO CAP! 💯
+                REAL-TIME FINANCIAL INTEL • NO CAP! 💯
               </p>
             </div>
           </div>

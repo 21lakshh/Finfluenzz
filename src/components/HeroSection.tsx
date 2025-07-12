@@ -1,8 +1,10 @@
-import { Button as RetroButton } from "pixel-retroui";
-import {  TrendingUp } from "lucide-react";
+import { TrendingUp, Github } from "lucide-react";
 import { RetroGrid } from "./magicui/retro-grid";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { Button } from "./button";
+
+const GITHUB_URL = "https://github.com/21lakshh/finfluenzz";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -37,7 +39,7 @@ const HeroSection = () => {
         <div className="absolute bottom-20 right-10 w-4 h-4 bg-[#001F3F] opacity-25 rounded-sm animate-bounce delay-500"></div>
       </div>
 
-      <div className="text-center max-w-4xl mx-auto relative z-10 bg-white/10 dark:bg-black/10 rounded-3xl p-8 border border-white/20">
+      <div className="relative z-10 text-center max-w-4xl mx-auto">
 
         {/* Main Headline with Minecraft Font */}
         <h1 className="text-4xl md:text-6xl font-bold text-[#001F3F] mb-6 font-minecraft leading-tight">
@@ -55,16 +57,26 @@ const HeroSection = () => {
           all with AI and gamified simplicity.
         </p>
 
-        {/* CTAs using RetroUI Buttons */}
+        {/* CTAs using new Button component */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <RetroButton 
-            className="bg-[#007FFF] hover:bg-[#001F3F] text-white px-8 py-4 text-lg font-minecraft border-4 border-[#001F3F] shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center gap-2"
+          <Button 
+            variant="default"
+            size="lg"
+            className="bg-[#007FFF] hover:bg-[#001F3F] text-white border-[#001F3F] font-minecraft text-lg flex items-center gap-2"
             onClick={handleExploreFeatures}
           >
             {user ? 'Go to Dashboard' : 'Explore Features'}
             <TrendingUp className="w-5 h-5" />
-          </RetroButton>
-        
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            className="border-[#001F3F] text-[#001F3F] hover:bg-[#001F3F] hover:text-white font-minecraft text-lg flex items-center gap-2"
+            onClick={() => window.open(GITHUB_URL, '_blank')}
+          >
+            <Github className="w-5 h-5" />
+            Open Sourced
+          </Button>
         </div>
 
         {/* Floating Coins Animation */}

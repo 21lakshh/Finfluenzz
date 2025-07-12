@@ -1,4 +1,4 @@
-import { TrendingUpIcon, DollarSignIcon, BrainCircuitIcon, BarChart3Icon } from "lucide-react"
+import { TrendingUpIcon, DollarSignIcon, BrainCircuitIcon, BarChart3Icon, NewspaperIcon, TrophyIcon } from "lucide-react"
 import { BentoCard, BentoGrid } from "../components/magicui/bento-grid";
 
 const stockData = [
@@ -35,13 +35,11 @@ const stockData = [
 ];
 
 const budgetItems = [
-  "💰 Monthly Income: ₹65,000",
   "🏠 Rent: ₹24,000 (37.5%)", 
-  "🍕 Food: ₹8,000 (12.5%)",
-  "🚗 Transportation: ₹6,000 (9.4%)",
-  "🎯 Savings Goal: ₹16,000 (25%)",
-  "🎮 Entertainment: ₹4,000 (6.3%)",
-  "📱 Subscriptions: ₹2,000 (3.1%)",
+  "🍕 Food: 450 KFC (12.5%)",
+  "🚗 Transportation: ₹800 Cab (9.4%)",
+  "🎮 Entertainment: ₹1,000 Netflix (6.3%)",
+  "📱 Subscriptions: ₹1,000 Spotify (3.1%)",
 ];
 
 const aiInsights = [
@@ -51,6 +49,21 @@ const aiInsights = [
   "⚠️ Risk Alert: Consider diversifying beyond tech",
   "🎯 Goal Update: You're 85% to your savings target!",
   "💰 Opportunity: Dollar-cost averaging recommended for AAPL",
+];
+
+const newsItems = [
+  "📈 Market Surge: Tech stocks rally amid AI boom - Finnhub",
+  "💹 Crypto Update: Bitcoin hits new high - CoinNews",
+  "🏦 Fed Decision: Interest rates remain steady",
+  "📊 Company Earnings: Apple reports record quarter",
+  "🌍 Global Markets: Asian indices mixed",
+];
+
+const challengeItems = [
+  "🏆 Save ₹800 this month by Carpooling",
+  "🎯 Cut your entertainment subscriptions by 50% by using free alternatives",
+  "💰 Walk to your destination instead of taking a cab",
+  "🍔 Try making your own food instead of buying it from a restaurant",
 ];
 
 // Stock chart data points
@@ -130,7 +143,7 @@ const features = [
   {
     Icon: BarChart3Icon,
     name: "Live Stock Charts",
-    description: "Real-time interactive charts with technical analysis and price predictions.",
+    description: "Real-time candlestick charts with pattern detection and technical indicators for stocks and crypto.",
     href: "#",
     cta: "View Charts",
     className: "col-span-3 lg:col-span-2",
@@ -138,8 +151,8 @@ const features = [
   },
   {
     Icon: DollarSignIcon,
-    name: "Smart Budgeting",
-    description: "AI-powered expense tracking with personalized insights and recommendations.",
+    name: "Smart Budgeting", 
+    description: "AI-powered expense tracking with smart categorization and weekly/monthly summaries.",
     href: "#",
     cta: "Create Budget",
     className: "col-span-3 lg:col-span-1",
@@ -162,9 +175,9 @@ const features = [
   {
     Icon: TrendingUpIcon,
     name: "Stock Watchlist",
-    description: "Track your favorite stocks with real-time prices and market insights.",
+    description: "Track favorite stocks with real-time prices, news, and AI insights.",
     href: "#",
-    cta: "Add Stocks",
+    cta: "Add Stocks", 
     className: "col-span-3 lg:col-span-1",
     background: (
       <div className="absolute inset-4 space-y-2">
@@ -186,7 +199,7 @@ const features = [
   {
     Icon: BrainCircuitIcon,
     name: "AI Investment Assistant",
-    description: "Get personalized investment advice and portfolio optimization suggestions.",
+    description: "Personalized advice, portfolio optimization, and risk assessment powered by AI.",
     href: "#",
     cta: "Ask AI",
     className: "col-span-3 lg:col-span-2",
@@ -200,6 +213,49 @@ const features = [
               style={{ animationDelay: `${idx * 300}ms` }}
             >
               <p className="text-sm font-minecraft text-[#001F3F] dark:text-white">{insight}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    Icon: NewspaperIcon,
+    name: "News Terminal",
+    description: "Real-time financial news from multiple sources, including stock-specific and crypto updates.",
+    href: "#",
+    cta: "Read News",
+    className: "col-span-3 lg:col-span-1",
+    background: (
+      <div className="absolute inset-4 space-y-2">
+        {newsItems.slice(0, 4).map((item, idx) => (
+          <div
+            key={idx}
+            className="bg-white/90 dark:bg-slate-800/90 rounded-lg p-3 border border-blue-200 dark:border-blue-800"
+          >
+            <p className="text-sm font-minecraft text-[#001F3F] dark:text-white">{item}</p>
+          </div>
+        ))}
+      </div>
+    ),
+  },
+  {
+    Icon: TrophyIcon,
+    name: "Gamified Challenges",
+    description: "Personalized financial challenges with achievements and progress tracking.",
+    href: "#",
+    cta: "Start Challenge",
+    className: "col-span-3 lg:col-span-2",
+    background: (
+      <div className="absolute inset-4">
+        <div className="space-y-3">
+          {challengeItems.slice(0, 4).map((item, idx) => (
+            <div
+              key={idx}
+              className="bg-gradient-to-r from-green-500/20 to-blue-500/20 dark:from-green-600/20 dark:to-blue-600/20 rounded-lg p-3 border border-green-300/50 dark:border-green-700/50 transform transition-all duration-300 hover:scale-105"
+              style={{ animationDelay: `${idx * 200}ms` }}
+            >
+              <p className="text-sm font-minecraft text-[#001F3F] dark:text-white">{item}</p>
             </div>
           ))}
         </div>

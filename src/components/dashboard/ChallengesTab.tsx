@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Trophy, CheckCircle, Star, Clock,  RefreshCw, Plus, Trash2, Zap, Target } from 'lucide-react'
+import { Trophy, CheckCircle, Star, Clock,  RefreshCw, Plus, Trash2, Zap, Target, Info } from 'lucide-react'
 import { useChallenges, type Challenge } from '../../hooks/useChallenges'
 import { useUser } from '../../hooks/useUser'
 import { useExpenses, type Expense } from '../../hooks/useExpenses'
 import challengeAgent from '../../Agents/challengeAgent'
 import type { UserProfile, Challenge as AgentChallenge } from '../../Agents/challengeAgent'
 import { useIsMobile } from '../../hooks/use-Mobile'
+import { Popover } from '../popover'
 
 interface ChallengesTabProps {
   userProfile?: Partial<UserProfile>
@@ -192,19 +193,38 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header with User Level Info */}
-      <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'justify-between items-center'}`}>
-        <div>
-          <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white mb-2`}>
-            🎮 GAMIFIED CHALLENGES
-          </h2>
-          <p className="text-gray-400">Complete challenges to earn XP and level up!</p>
+      {/* Header with User Level Info and Info Popover */}
+      <div className={`flex ${isMobile ? 'flex-col space-y-4' : 'justify-between items-center'}`}>        
+        <div className="flex items-center gap-2">
+          <Popover>
+            <Popover.Trigger asChild>
+              <button
+                className="bg-[#F0F8FF] border-2 border-[#001F3F] text-[#001F3F] hover:bg-[#007FFF] hover:text-white transition-colors rounded-md p-1 flex items-center shadow font-minecraft text-xs focus:outline-none focus:ring-2 focus:ring-[#007FFF]"
+                aria-label="How Challenges Work"
+                tabIndex={0}
+              >
+                <Info className="w-4 h-4 mr-1" />
+                <span className="hidden sm:inline">How it works</span>
+              </button>
+            </Popover.Trigger>
+            <Popover.Content className="bg-[#F0F8FF] border-2 border-[#001F3F] rounded-lg shadow-lg max-w-xs font-minecraft text-[#001F3F] text-sm p-4">
+              <div className="flex items-center mb-2">
+                <Trophy className="w-5 h-5 text-yellow-400 mr-2" />
+                <span className="font-bold">How Challenges Work</span>
+              </div>
+              <p className="mb-2">
+                <span className="font-bold">Finfluenzz</span> analyzes your past week's expenses and generates personalized financial challenges to help you save, invest, and budget smarter.
+              </p>
+              <p>
+                The more you use the app, the more tailored your challenges become! Complete challenges to earn XP and level up your financial game. 🎮
+              </p>
+            </Popover.Content>
+          </Popover>
         </div>
-        
         {user && (
-          <div className="bg-gray-800 rounded-lg p-4 min-w-[280px]">
+          <div className="bg-[#F0F8FF] dark:bg-[#1a1a2e]/90 rounded-xl p-4 min-w-[280px] border-2 border-[#007FFF] shadow text-[#001F3F] dark:text-[#F0F8FF]">
             <div className="flex items-center justify-between mb-2">
-              <span className={`font-bold text-white`}>
+              <span className={`font-bold text-[#001F3F] dark:text-[#F0F8FF]`}>
                 Level {levelInfo.currentLevel} - {getLevelName(levelInfo.currentLevel)}
               </span>
               <span className="text-yellow-400 flex items-center">
@@ -271,41 +291,41 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
 
       {/* Stats Grid */}
       <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-4 gap-4'}`}>
-        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+        <div className="bg-[#F0F8FF] dark:bg-[#1a1a2e]/90 p-4 border-2 border-[#007FFF] shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-[#001F3F] dark:text-[#F0F8FF]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">ACTIVE</p>
-              <p className="text-2xl font-bold text-white">{stats.activeChallenges}</p>
+              <p className="text-2xl font-bold text-[#001F3F] dark:text-[#F0F8FF]">{stats.activeChallenges}</p>
             </div>
             <Target className="w-8 h-8 text-blue-500" />
           </div>
         </div>
         
-        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+        <div className="bg-[#F0F8FF] dark:bg-[#1a1a2e]/90 p-4 border-2 border-[#007FFF] shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-[#001F3F] dark:text-[#F0F8FF]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">COMPLETED</p>
-              <p className="text-2xl font-bold text-white">{stats.completedChallenges}</p>
+              <p className="text-2xl font-bold text-[#001F3F] dark:text-[#F0F8FF]">{stats.completedChallenges}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-green-500" />
           </div>
         </div>
         
-        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+        <div className="bg-[#F0F8FF] dark:bg-[#1a1a2e]/90 p-4 border-2 border-[#007FFF] shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-[#001F3F] dark:text-[#F0F8FF]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">TOTAL XP</p>
-              <p className="text-2xl font-bold text-white">{user?.earnedXp || 0}</p>
+              <p className="text-2xl font-bold text-[#001F3F] dark:text-[#F0F8FF]">{user?.earnedXp || 0}</p>
             </div>
             <Star className="w-8 h-8 text-yellow-500" />
           </div>
         </div>
         
-        <div className="bg-gray-800 p-4 border-2 border-gray-600">
+        <div className="bg-[#F0F8FF] dark:bg-[#1a1a2e]/90 p-4 border-2 border-[#007FFF] shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-[#001F3F] dark:text-[#F0F8FF]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">LEVEL</p>
-              <p className="text-2xl font-bold text-white">{levelInfo.currentLevel}</p>
+              <p className="text-2xl font-bold text-[#001F3F] dark:text-[#F0F8FF]">{levelInfo.currentLevel}</p>
             </div>
             <Trophy className="w-8 h-8 text-purple-500" />
           </div>
@@ -314,11 +334,10 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
 
       {/* Challenges List */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold text-white">Active Challenges</h3>
         
         {challengesLoading && (
           <div className="flex justify-center py-8">
-            <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+            <RefreshCw className="w-8 h-8 text-white animate-spin" />
           </div>
         )}
         
@@ -338,12 +357,12 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
         
         <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
           {activeChallenges.map((challenge) => (
-            <div key={challenge.id} className="bg-gray-800 border-2 border-gray-600 p-6">
+            <div key={challenge.id} className="bg-[#F0F8FF] dark:bg-[#1a1a2e]/90 border-2 border-[#007FFF] p-6 shadow-[0_2px_8px_rgba(0,0,0,0.10)] text-[#001F3F] dark:text-[#F0F8FF]">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{challenge.emoji}</span>
                   <div>
-                    <h4 className="font-bold text-white text-lg">{challenge.title}</h4>
+                    <h4 className="font-bold text-[#001F3F] dark:text-[#F0F8FF] text-lg">{challenge.title}</h4>
                   </div>
                 </div>
                 
@@ -358,10 +377,10 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-4">{challenge.description}</p>
+              <p className="text-[#001F3F] dark:text-[#F0F8FF] text-base mb-4">{challenge.description}</p>
               
               <div className="flex items-center justify-between">
-                <div className="flex items-center text-gray-400 text-sm">
+                <div className="flex items-center text-[#007FFF] dark:text-blue-200 text-sm">
                   <Clock className="w-4 h-4 mr-1" />
                   {formatDeadline(challenge.deadline)}
                 </div>
@@ -378,7 +397,7 @@ export default function ChallengesTab({ userProfile }: ChallengesTabProps) {
 
               <div className="flex items-center space-x-2 mt-1">
                 <span className={`w-3 h-3 rounded-full ${getCategoryColor(challenge.category)}`}></span>
-                <span className="text-gray-400 text-sm capitalize">{challenge.category}</span>
+                <span className="text-[#007FFF] dark:text-blue-200 text-sm capitalize">{challenge.category}</span>
               </div>
             </div>
           ))}

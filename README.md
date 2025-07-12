@@ -3,23 +3,29 @@
 **Empowering Gen Z with Smart Finance - One Pixel at a Time**
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-finfluenzz.vercel.app-007FFF?style=for-the-badge)](https://finfluenzz.vercel.app/)
+
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 
 ## 🌟 About Finfluenzz
 
 Finfluenzz is a cutting-edge fintech application designed specifically for Gen Z users, combining financial management with a retro gaming aesthetic. Our platform makes finance fun, accessible, and engaging through gamification, AI-powered insights, and modern UX design.
 
-**🔗 Live Application:** [https://finfluenzz.vercel.app/](https://finfluenzz.vercel.app/)
+**🔗 Live Application:** [https://finfluenzz.vercel.app/](https://finfluenzz.vercel.app/)  
+**🔗 Demo Link:** [https://www.youtube.com/watch?v=tmsRVF5pLj8](https://www.youtube.com/watch?v=tmsRVF5pLj8)
 
 ### 🎯 Mission
+
 To democratize financial literacy and empower the next generation with smart money management tools wrapped in an engaging, game-like experience.
 
 ## ✨ Features
 
 ### 🤖 AI Finance Advisor
-- **Smart Investment Recommendations** powered by Groq AI
+
+- **Smart Investment Recommendations** powered by Groq AI (Fed with real time stock/crypto data)
 - **Real-time Stock Analysis** using Alpha Vantage APIs
 - **Dual Chart Modes for Stocks** - Switch between candlestick patterns and 50-day trend analysis (stocks only)
 - **Real-time Candlestick Charts** - Intraday minute-level data with pattern detection for stocks
@@ -33,6 +39,7 @@ To democratize financial literacy and empower the next generation with smart mon
 - **Market Status Tracking** - Real-time US and Indian market hours monitoring
 
 ### 📈 Investment Zone
+
 - **AI Portfolio Analysis** - Powered by Gemini API for comprehensive portfolio insights
 - **Current Holdings Analysis** - Detailed breakdown of your investment positions
 - **Portfolio Performance Metrics** - Risk assessment, diversification analysis, and recommendations
@@ -42,22 +49,27 @@ To democratize financial literacy and empower the next generation with smart mon
 - **Risk-Return Optimization** - Personalized recommendations for portfolio improvement
 
 ### 📰 News Terminal
+
 - **Multi-source News Integration** - Finnhub API for comprehensive market coverage
 - **Stock-specific News** - Company news filtered by symbol
 - **Crypto News Coverage** - Dedicated cryptocurrency news section
 - **Real-time News Feed** - Latest financial headlines with timestamps
 
 ### 💰 Budget Tracker
+
 - **Real-time Expense Management** with CRUD operations
 - **Smart Categorization** of expenses and income
 - **Smart AI Summarizer** about Weekly/Monthly expenditure 
 
 ### 🏆 Gamified Challenges
-- **Personalized Financial Challenges** based on spending patterns
-- **Achievement System** with progress tracking
-- **Weekly/Monthly Goals** for savings and budgeting
+
+- **Personalized Financial Challenges** based on spending patterns  
+- **Achievement System** with progress tracking, Gamified Dynamic Leveling up system  
+- **Gamified Challenges** Experience gain and leveling up gamified experience on completing challenges  
+- **Weekly/Monthly Goals** for savings and budgeting  
 
 ### 🔐 Secure Authentication
+
 - **JWT-based Authentication** with refresh tokens
 - **Protected Routes** and role-based access
 - **Password Encryption** using bcrypt
@@ -65,17 +77,18 @@ To democratize financial literacy and empower the next generation with smart mon
 - **Enhanced User Caching** - Improved session persistence
 
 ### 🎨 Retro Gaming UI
+
 - **Pixel-perfect Design** inspired by classic arcade games
 - **Enhanced Mobile Optimization** - Responsive charts and controls
 - **Pattern Reference Tables** - Educational candlestick pattern guides
 - **Responsive Layout** for all devices
-- **Dark/Light Mode** support
 - **Smooth Animations** and micro-interactions
 - **Accessibility Features** for inclusive design
 
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** - Modern UI library with hooks
 - **TypeScript** - Type-safe JavaScript development
 - **Vite** - Fast build tool and dev server
@@ -86,6 +99,7 @@ To democratize financial literacy and empower the next generation with smart mon
 - **Lucide React** - Beautiful icon library
 
 ### Backend
+
 - **Cloudflare Workers** - Serverless edge computing
 - **Hono Framework** - Lightweight web framework
 - **Prisma ORM** - Type-safe database access
@@ -94,18 +108,13 @@ To democratize financial literacy and empower the next generation with smart mon
 - **bcrypt** - Password hashing
 
 ### APIs & Services
+
 - **Groq AI** - Advanced language model for financial advice in Finance Advisor
 - **Gemini AI** - Portfolio analysis and investment insights in Investment Zone
 - **Alpha Vantage API** - Primary real-time stock data provider with intraday support
 - **Finnhub API** - News integration and backup stock data
 - **CoinGecko API** - Cryptocurrency data and historical pricing
 - **Vercel** - Frontend deployment and hosting
-
-### Development Tools
-- **ESLint** - Code linting and quality
-- **Prettier** - Code formatting
-- **Git** - Version control
-- **npm** - Package management
 
 ## 🚀 Quick Start
 

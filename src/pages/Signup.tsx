@@ -93,7 +93,7 @@ export default function Signup() {
 
       console.log('Sending signup data:', signupData)
 
-      const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/signup", signupData)
+      const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/user/signup", signupData)
       
       if (response.status === 200) {
         localStorage.setItem('Authorization', response.data.token)

@@ -1,9 +1,7 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import 'pixel-retroui/dist/index.css';
-@import 'pixel-retroui/dist/fonts.css';
-
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
 
 @layer base {

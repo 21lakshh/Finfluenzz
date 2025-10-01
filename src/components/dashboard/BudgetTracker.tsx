@@ -1,10 +1,40 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import axios from 'axios'
-import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, FileText, Loader2 } from 'lucide-react'
+import { Plus, Trash2, PiggyBank, TrendingUp, TrendingDown, Calendar, DollarSign, BarChart3, FileText, Loader2, Download } from 'lucide-react'
 import { useIsMobile } from '../../hooks/use-Mobile'
 import expenseSummarizerAgent from '../../Agents/expenseSummarizerAgent'
 import type { SummaryRequest } from '../../Agents/expenseSummarizerAgent'
-import React from 'react';
+import { Line, Doughnut } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title,
+  Filler
+} from 'chart.js'
+import { jsPDF } from 'jspdf'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title,
+  Filler
+)
+
+type SummaryNode =
+  | { type: 'heading'; content: string }
+  | { type: 'text'; content: string }
+  | { type: 'list'; items: string[] }
 
 export interface ExpenseItem {
   id: string
@@ -45,7 +75,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
     category: '',
     amount: 0,
     description: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString()
   })
 
   // Check if cached data is still valid
@@ -127,7 +157,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
           category: expense.category,
           amount: expense.amount,
           description: expense.description,
-          date: expense.date || new Date().toISOString().split('T')[0] // Use current date if not provided
+          date: expense.createdAt.split('T')[0]
         }))
         setExpenses(mappedExpenses)
         cacheExpenses(mappedExpenses) // Cache the fresh data
@@ -192,7 +222,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
           category: response.data.expense.category,
           amount: response.data.expense.amount,
           description: response.data.expense.description,
-          date: newExpense.date // Use the date from the form
+          date: newExpense.date
         }
         
         // Update local state
@@ -207,7 +237,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
           category: '',
           amount: 0,
           description: '',
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString()  
         })
         setShowExpenseForm(false)
       }
@@ -281,6 +311,138 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
     return acc
   }, {} as Record<string, number>)
 
+  const expenseTotalsByDate = useMemo(() => {
+    return expenses.reduce((acc, expense) => {
+      const dateKey = expense.date ?? new Date().toISOString().split('T')[0]
+      acc[dateKey] = (acc[dateKey] || 0) + expense.amount
+      return acc
+    }, {} as Record<string, number>)
+  }, [expenses])
+
+  const weeklyTrendData = useMemo(() => {
+    const labels: string[] = []
+    const dataPoints: number[] = []
+    const today = new Date()
+
+    for (let i = 6; i >= 0; i--) {
+      const current = new Date(today)
+      current.setDate(today.getDate() - i)
+      const key = current.toISOString().split('T')[0]
+      labels.push(current.toLocaleDateString('en-IN', {
+        weekday: 'short',
+        day: 'numeric'
+      }))
+      dataPoints.push(expenseTotalsByDate[key] ?? 0)
+    }
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Daily Spend',
+          data: dataPoints,
+          borderColor: '#001F3F',
+          backgroundColor: 'rgba(0, 127, 255, 0.25)',
+          pointBackgroundColor: '#FFD700',
+          tension: 0.35,
+          fill: true,
+          borderWidth: 3,
+          pointRadius: 5
+        }
+      ]
+    }
+  }, [expenseTotalsByDate])
+
+  const weeklyTrendOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => `₹${context.parsed.y?.toFixed(2) ?? 0}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#001F3F',
+          font: {
+            family: 'inherit',
+            weight: 'bold'
+          }
+        },
+        grid: {
+          color: 'rgba(0, 31, 63, 0.1)'
+        }
+      },
+      y: {
+        ticks: {
+          color: '#001F3F',
+          font: {
+            family: 'inherit',
+            weight: 'bold'
+          },
+          callback: (value: number | string) => `₹${value}`
+        },
+        grid: {
+          color: 'rgba(0, 31, 63, 0.1)'
+        }
+      }
+    }
+  }), [])
+
+  const categoryChartData = useMemo(() => {
+    const entries = Object.entries(categoryTotals)
+    const colors = [
+      '#007FFF',
+      '#001F3F',
+      '#33A1FF',
+      '#99CFFF',
+      '#FFD700',
+      '#FF7A00',
+      '#8E44AD',
+      '#2ECC71'
+    ]
+
+    return {
+      labels: entries.map(([category]) => category),
+      datasets: [
+        {
+          data: entries.map(([, amount]) => amount),
+          backgroundColor: entries.map((_, index) => colors[index % colors.length]),
+          borderColor: '#001F3F',
+          borderWidth: 2,
+          hoverOffset: 8
+        }
+      ]
+    }
+  }, [categoryTotals])
+
+  const categoryChartOptions = useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          color: '#001F3F',
+          usePointStyle: true,
+          padding: 16
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => `₹${context.parsed.toFixed(2)}`
+        }
+      }
+    },
+    cutout: '55%'
+  }), [])
+
   const categories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Healthcare', 'Education', 'Other']
 
   const formatDate = (dateString?: string) => {
@@ -323,7 +485,11 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
       const periodLabel = period === 'week' ? 'Past Week' : 'Past Month'
       
       if (periodExpenses.length === 0) {
-        setSummaryContent(`## ${periodLabel} Summary 📊\n\nNo expenses found for the ${period === 'week' ? 'past week' : 'past month'}. Start tracking your expenses to get detailed insights!\n\n💡 **Tip**: Add some expenses using the form above to generate meaningful summaries.`)
+        setSummaryContent(`## ${periodLabel} Summary
+
+No expenses found for the ${period === 'week' ? 'past week' : 'past month'}. Start tracking your expenses to get detailed insights!
+
+Tip: Add some expenses using the form above to generate meaningful summaries.`)
         setShowSummary(true)
         return
       }
@@ -344,6 +510,120 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
       setSummaryLoading(false)
     }
   }
+
+  const summaryNodes = useMemo<SummaryNode[]>(() => {
+    if (!summaryContent) return []
+
+    const lines = summaryContent.split('\n')
+    const nodes: SummaryNode[] = []
+    let currentList: string[] = []
+
+    const stripMarkdown = (value: string) => value
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/__(.*?)__/g, '$1')
+      .replace(/~~(.*?)~~/g, '$1')
+      .replace(/`+/g, '')
+      .trim()
+
+    const flushList = () => {
+      if (currentList.length === 0) return
+      nodes.push({ type: 'list', items: currentList })
+      currentList = []
+    }
+
+    lines.forEach((line: string) => {
+      const trimmed = line.trim()
+
+      if (!trimmed) {
+        flushList()
+        return
+      }
+
+      if (/^#{1,6}\s+/.test(trimmed)) {
+        flushList()
+        const heading = stripMarkdown(trimmed.replace(/^#{1,6}\s+/, ''))
+        if (heading) {
+          nodes.push({ type: 'heading', content: heading })
+        }
+        return
+      }
+
+      if (/^[-*•]\s+/.test(trimmed) || /^\d+\.\s+/.test(trimmed)) {
+        const item = stripMarkdown(trimmed.replace(/^([-*•]|\d+\.)\s+/, ''))
+        if (item) {
+          currentList.push(item)
+        }
+        return
+      }
+
+      flushList()
+      const text = stripMarkdown(trimmed)
+      if (text) {
+        nodes.push({ type: 'text', content: text })
+      }
+    })
+
+    flushList()
+    return nodes
+  }, [summaryContent])
+
+  const handleExportSummary = useCallback(() => {
+    if (!summaryNodes.length) return
+
+    const doc = new jsPDF()
+    const margin = 15
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    let cursorY = margin + 10
+
+    const ensureSpace = (lineHeight: number) => {
+      if (cursorY + lineHeight > pageHeight - margin) {
+        doc.addPage()
+        cursorY = margin
+      }
+    }
+
+    const addParagraph = (text: string, options: { bold?: boolean; extraSpace?: number } = {}) => {
+      const { bold = false, extraSpace = 6 } = options
+      doc.setFont('helvetica', bold ? 'bold' : 'normal')
+      doc.setFontSize(bold ? 14 : 11)
+      const lines = doc.splitTextToSize(text, pageWidth - margin * 2)
+      lines.forEach((line: string) => {
+        ensureSpace(14)
+        doc.text(line, margin, cursorY)
+        cursorY += 14
+      })
+      cursorY += extraSpace
+    }
+
+    const addListItem = (text: string) => {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(11)
+      const lines = doc.splitTextToSize(`• ${text}`, pageWidth - margin * 2)
+      lines.forEach((line: string) => {
+        ensureSpace(12)
+        doc.text(line, margin, cursorY)
+        cursorY += 12
+      })
+      cursorY += 4
+    }
+
+    addParagraph(`${summaryType === 'week' ? 'Weekly' : 'Monthly'} Expense Summary`, { bold: true, extraSpace: 10 })
+
+    summaryNodes.forEach((node: SummaryNode) => {
+      if (node.type === 'heading') {
+        addParagraph(node.content.toUpperCase(), { bold: true, extraSpace: 4 })
+      } else if (node.type === 'text') {
+        addParagraph(node.content)
+      } else if (node.type === 'list') {
+        node.items.forEach(addListItem)
+        cursorY += 4
+      }
+    })
+
+    doc.save(`finfluenzz-${summaryType}-summary.pdf`)
+  }, [summaryNodes, summaryType])
 
   // Loading state
   if (isLoading) {
@@ -444,6 +724,18 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
               )}
               <span>MONTH SUMMARY</span>
             </button>
+
+            <button
+              onClick={handleExportSummary}
+              disabled={!summaryNodes.length}
+              className={`bg-white text-purple-600 border-2 border-purple-400 hover:bg-purple-100 transition-colors font-bold disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-2 ${
+                isMobile ? 'flex-1 px-3 py-2 text-sm' : 'px-4 py-2'
+              }`}
+              style={{ borderRadius: '0px' }}
+            >
+              <Download className={`${isMobile ? 'w-4 h-4' : 'w-4 h-4'}`} />
+              <span>EXPORT PDF</span>
+            </button>
           </div>
         </div>
         
@@ -476,37 +768,37 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
                 </button>
               </div>
               <div 
-                className={`text-[#001F3F] leading-relaxed whitespace-pre-wrap ${
+                className={`text-[#001F3F] leading-relaxed space-y-3 ${
                   isMobile ? 'text-xs' : 'text-sm'
                 }`}
-                style={{ 
-                  fontFamily: 'inherit',
-                  wordBreak: 'break-word'
-                }}
               >
-                {(() => {
-                  if (React.isValidElement(summaryContent)) {
-                    return '[Invalid AI response: React element received]';
-                  }
-                  
-                  if (typeof summaryContent === 'string') {
-                    // Simple markdown-style formatting
-                    return summaryContent
-                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                      .split('\n')
-                      .map((line, index) => (
-                        <div key={index} dangerouslySetInnerHTML={{ __html: line }} />
-                      ));
-                  }
-                  
-                  try {
-                    return JSON.stringify(summaryContent, null, 2);
-                  } catch (err) {
-                    console.error('Error stringifying summaryContent:', err);
-                    return '[Unable to display summary]';
-                  }
-                })()}
+                {summaryNodes.length === 0 ? (
+                  <p>No summary content available.</p>
+                ) : (
+                  summaryNodes.map((node, index) => {
+                    if (node.type === 'heading') {
+                      return (
+                        <p key={`heading-${index}`} className="font-bold text-purple-700 uppercase tracking-wide">
+                          {node.content}
+                        </p>
+                      )
+                    }
+
+                    if (node.type === 'list') {
+                      return (
+                <ul key={`list-${index}`} className="list-disc pl-5 space-y-1 marker:text-purple-500">
+                          {node.items.map((item, itemIndex) => (
+                            <li key={`list-${index}-${itemIndex}`}>{item}</li>
+                          ))}
+                        </ul>
+                      )
+                    }
+
+                    return (
+                      <p key={`text-${index}`}>{node.content}</p>
+                    )
+                  })
+                )}
               </div>
             </div>
           </div>
@@ -577,37 +869,64 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
         </div>
       </div>
 
-      {/* Category Breakdown for This Week */}
-      {Object.keys(categoryTotals).length > 0 && (
-        <div className={`bg-white/60 border-4 border-[#007FFF] ${
-          isMobile ? 'p-4' : 'p-6'
-        }`} style={{ borderRadius: '0px' }}>
-          <h3 className={`font-bold text-[#001F3F] mb-4 tracking-wide ${
-            isMobile ? 'text-lg' : 'text-xl'
-          }`}>
-            📊 THIS WEEK BY CATEGORY
-          </h3>
+      {/* Visual Analytics */}
+      {(Object.keys(categoryTotals).length > 0 || expenses.length > 0) && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className={`font-bold text-[#001F3F] tracking-wide ${
+              isMobile ? 'text-lg' : 'text-xl'
+            }`}>
+              📈 Visual Analytics
+            </h3>
+            <span className="text-xs font-mono text-[#001F3F]/60 uppercase tracking-[0.2em]">
+              last updated {new Date().toLocaleDateString('en-IN')}
+            </span>
+          </div>
+
           <div className={`grid gap-4 ${
-            isMobile ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-4'
+            isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'
           }`}>
-            {Object.entries(categoryTotals).map(([category, amount]) => (
-              <div key={category} className={`bg-blue-50/50 border-2 border-[#007FFF]/30 ${
-                isMobile ? 'p-2' : 'p-3'
-              }`}>
-                <p className="text-sm text-[#001F3F] opacity-70 font-bold">{category.toUpperCase()}</p>
-                <p className={`font-bold text-[#001F3F] ${
-                  isMobile ? 'text-base' : 'text-lg'
-                }`}>₹{amount.toFixed(2)}</p>
-                <div className="w-full bg-[#007FFF]/20 h-2 mt-2">
-                  <div 
-                    className="bg-[#007FFF] h-full transition-all duration-300"
-                    style={{ width: `${(amount / thisWeekTotal) * 100}%` }}
-                  ></div>
+            {/* Weekly Trend Chart */}
+            {expenses.length > 0 && (
+              <div className={`bg-white/80 border-4 border-[#001F3F] shadow-[6px_6px_0_0_#001F3F] ${
+                isMobile ? 'p-4' : 'p-6'
+              }`} style={{ borderRadius: '0px', boxShadow: 'inset 0 0 0 2px #007FFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className={`font-bold text-[#001F3F] tracking-wide flex items-center gap-2 ${
+                    isMobile ? 'text-base' : 'text-lg'
+                  }`}>
+                    <TrendingUp className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-[#007FFF]`} />
+                    Weekly Spend Trend
+                  </h4>
+                  <span className="text-sm font-mono text-[#001F3F]/70">Last 7 days</span>
+                </div>
+                <div className="h-64">
+                  <Line data={weeklyTrendData} options={weeklyTrendOptions as any} />
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Category Doughnut Chart */}
+            {Object.keys(categoryTotals).length > 0 && (
+              <div className={`bg-white/80 border-4 border-[#001F3F] shadow-[6px_6px_0_0_#001F3F] ${
+                isMobile ? 'p-4' : 'p-6'
+              }`} style={{ borderRadius: '0px', boxShadow: 'inset 0 0 0 2px #007FFF' }}>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className={`font-bold text-[#001F3F] tracking-wide flex items-center gap-2 ${
+                    isMobile ? 'text-base' : 'text-lg'
+                  }`}>
+                    <BarChart3 className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-[#007FFF]`} />
+                    Category Allocation
+                  </h4>
+                  <span className="text-sm font-mono text-[#001F3F]/70">This week</span>
+                </div>
+                <div className={`${isMobile ? 'h-64' : 'h-72'} flex items-center justify-center`}>
+                  <Doughnut data={categoryChartData} options={categoryChartOptions} />
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Add Expense Section */}

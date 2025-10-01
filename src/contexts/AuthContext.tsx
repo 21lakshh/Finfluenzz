@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true)
       setError(null)
       
-      const response = await axios.get('https://finfluenzz.lakshyapaliwal200.workers.dev/api/me', {
+      const response = await axios.get('https://finfluenzz.lakshyapaliwal200.workers.dev/api/user/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

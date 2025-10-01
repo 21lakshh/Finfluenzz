@@ -144,7 +144,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
     try {
       setIsLoading(true)
       setError('')
-      const response = await axios.get("https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/all", {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/expenses/all`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
         }
@@ -209,7 +209,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
         description: newExpense.description
       }
 
-      const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/add", expenseData, {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/expenses/add`, expenseData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
         }
@@ -262,7 +262,7 @@ export default function BudgetTracker({ onExpensesChange }: BudgetTrackerProps) 
   const handleRemoveExpense = async (id: string) => {
     try {
       setError('')
-      await axios.delete(`https://finfluenzz.lakshyapaliwal200.workers.dev/api/expense/delete/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/expenses/delete/${id}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('Authorization')}`
         }

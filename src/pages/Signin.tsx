@@ -61,7 +61,7 @@ export default function Signin() {
     setErrors({})
 
     try {
-        const response = await axios.post("https://finfluenzz.lakshyapaliwal200.workers.dev/api/user/signin", formData)
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/signin`, formData)
         if (response.status === 200) {
           localStorage.setItem('Authorization', response.data.token)
           

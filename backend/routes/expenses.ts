@@ -8,7 +8,7 @@ export const expensesRoute = new Hono<{
     Variables: { userId: string }
 }>()
 
-expensesRoute.post('/expense/add', authmiddleware, async (c) => {
+expensesRoute.post('/add', authmiddleware, async (c) => {
     const userId = c.get('userId')
     const { amount, category, description } = await c.req.json()
 
@@ -30,7 +30,7 @@ expensesRoute.post('/expense/add', authmiddleware, async (c) => {
     return c.json({ expense })
 })
 
-expensesRoute.get('/expense/all', authmiddleware, async (c) => {
+expensesRoute.get('/all', authmiddleware, async (c) => {
     const userId = c.get('userId')
     const expenses = await prisma.expense.findMany({
         where: { userId }
@@ -38,7 +38,7 @@ expensesRoute.get('/expense/all', authmiddleware, async (c) => {
     return c.json({ expenses })
 })
 
-expensesRoute.delete('/expense/delete/:id', authmiddleware, async (c) => {
+expensesRoute.delete('/delete/:id', authmiddleware, async (c) => {
     const userId = c.get('userId')
     const { id } = c.req.param()
     const expense = await prisma.expense.delete({

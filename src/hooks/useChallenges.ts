@@ -126,7 +126,7 @@ export const useChallenges = () => {
     setError(null)
     
     try {
-      const response = await axios.get('https://finfluenzz.lakshyapaliwal200.workers.dev/api/challenge/all', {
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/challenges/all`, {
         headers: getAuthHeaders()
       })
       
@@ -165,7 +165,7 @@ export const useChallenges = () => {
     
     try {
       // Send the array directly - backend expects array, not { challenges: array }
-      const response = await axios.post('https://finfluenzz.lakshyapaliwal200.workers.dev/api/challenge/add', challengesData, {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/challenges/add`, challengesData, {
         headers: getAuthHeaders()
       })
       
@@ -199,7 +199,7 @@ export const useChallenges = () => {
     
     try {
       // Backend handles challenge completion via DELETE which awards XP
-      const response = await axios.delete(`https://finfluenzz.lakshyapaliwal200.workers.dev/api/challenge/delete/${challengeId}`, {
+      const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/challenges/delete/${challengeId}`, {
         headers: getAuthHeaders()
       })
       
@@ -234,7 +234,7 @@ export const useChallenges = () => {
     setError(null)
     
     try {
-      const response = await axios.delete('https://finfluenzz.lakshyapaliwal200.workers.dev/api/challenge/delete/all', {
+      const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/challenges/delete/all`, {
         headers: getAuthHeaders()
       })
       

@@ -191,7 +191,7 @@ const fetchUserGlobally = async (forceRefresh = false): Promise<User | null> => 
 
   try {
     console.log('Fetching user from API (global)')
-    const response = await axios.get('https://finfluenzz.lakshyapaliwal200.workers.dev/api/me', {
+    const response = await axios.get('https://finfluenzz.lakshyapaliwal200.workers.dev/api/user/me', {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('Authorization')}`

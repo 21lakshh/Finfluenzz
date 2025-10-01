@@ -8,7 +8,7 @@ export const challengesRoute = new Hono<{
     Variables: { userId: string }
 }>()
 
-challengesRoute.post('/challenge/add', authmiddleware, async (c) => {
+challengesRoute.post('/add', authmiddleware, async (c) => {
     const userId = c.get('userId')
     const body = await c.req.json()
 
@@ -79,7 +79,7 @@ challengesRoute.post('/challenge/add', authmiddleware, async (c) => {
 })
 
 // get all current challenges
-challengesRoute.get('/challenge/all', authmiddleware, async (c) => {
+challengesRoute.get('/all', authmiddleware, async (c) => {
     const userId = c.get('userId')
     const challenges = await prisma.challenge.findMany({
         where: { userId }
@@ -88,7 +88,7 @@ challengesRoute.get('/challenge/all', authmiddleware, async (c) => {
 })
 
 // delete all challenges (must come before /:id route)
-challengesRoute.delete('/challenge/delete/all', authmiddleware, async (c) => {
+challengesRoute.delete('/delete/all', authmiddleware, async (c) => {
     try {
         const userId = c.get('userId')
         const result = await prisma.challenge.deleteMany({
@@ -105,7 +105,7 @@ challengesRoute.delete('/challenge/delete/all', authmiddleware, async (c) => {
 })
 
 // completed challenge, upon delete reward xp to user
-challengesRoute.delete('/challenge/delete/:id', authmiddleware, async (c) => {
+challengesRoute.delete('/delete/:id', authmiddleware, async (c) => {
     try {
         const userId = c.get('userId')
         const { id } = c.req.param()
